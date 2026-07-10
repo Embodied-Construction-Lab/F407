@@ -1,0 +1,10 @@
+../Core/Src/dwj_reader.c:25:17:ads1115_build_config	1
+../Core/Src/dwj_reader.c:38:16:ads1115_raw_to_mv	3
+../Core/Src/dwj_reader.c:49:9:Dwj_VoltageToAngleTenths	4
+../Core/Src/dwj_reader.c:80:19:Dwj_StartConversion	3
+../Core/Src/dwj_reader.c:98:19:Dwj_ReadConversionRawMv	6
+../Core/Src/dwj_reader.c:136:19:Dwj_BuildStartConversionCommand	3
+../Core/Src/dwj_reader.c:154:6:Dwj_BuildReadConversionCommand	2
+../Core/Src/dwj_reader.c:164:6:Dwj_DecodeRawMv	4
+../Core/Src/dwj_reader.c:175:6:Dwj_UpdateBigArmReading	2
+../Core/Src/dwj_reader.c:193:6:Dwj_UpdateBucketReading	2

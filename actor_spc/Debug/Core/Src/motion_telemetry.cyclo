@@ -1,0 +1,5 @@
+../Core/Src/motion_telemetry.c:6:12:append_format	7
+../Core/Src/motion_telemetry.c:31:16:round_thousandths	2
+../Core/Src/motion_telemetry.c:40:12:append_fixed3	3
+../Core/Src/motion_telemetry.c:61:5:MotionTelemetry_BuildHeader	5
+../Core/Src/motion_telemetry.c:84:5:MotionTelemetry_BuildRow	21

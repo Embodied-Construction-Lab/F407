@@ -1,0 +1,14 @@
+../Core/Src/ftepc_rs485.c:17:13:Ftepc485_SetTransmit	3
+../Core/Src/ftepc_rs485.c:25:13:Ftepc485_SetReceive	3
+../Core/Src/ftepc_rs485.c:33:16:Ftepc485_ReadInt32Be	1
+../Core/Src/ftepc_rs485.c:43:16:Ftepc485_SaturateInt32	3
+../Core/Src/ftepc_rs485.c:56:16:Ftepc485_DivideRoundNearest	3
+../Core/Src/ftepc_rs485.c:72:15:Ftepc485_ChannelDirection	2
+../Core/Src/ftepc_rs485.c:82:13:Ftepc485_BuildReadRequest	1
+../Core/Src/ftepc_rs485.c:101:10:Ftepc485_Crc16	4
+../Core/Src/ftepc_rs485.c:124:17:Ftepc485_ParseThreePulseResponse	9
+../Core/Src/ftepc_rs485.c:165:6:Ftepc485_Init	4
+../Core/Src/ftepc_rs485.c:189:17:Ftepc485_ReadThreePulses	8
+../Core/Src/ftepc_rs485.c:243:6:Ftepc485_ConvertPulses	4
+../Core/Src/ftepc_rs485.c:264:9:Ftepc485_DeltaToSpeedHundredthsMmS	2
+../Core/Src/ftepc_rs485.c:285:17:Ftepc485_Poll	8

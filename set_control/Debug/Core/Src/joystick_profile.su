@@ -1,0 +1,7 @@
+../Core/Src/joystick_profile.c:13:13:clear_sample	16	static
+../Core/Src/joystick_profile.c:26:13:set_selected_axis	16	static
+../Core/Src/joystick_profile.c:52:14:current_amplitude	16	static
+../Core/Src/joystick_profile.c:62:13:advance_after_negative_limit	16	static
+../Core/Src/joystick_profile.c:83:6:JoystickProfile_Init	16	static
+../Core/Src/joystick_profile.c:102:6:JoystickProfile_SetAxisEnabled	16	static
+../Core/Src/joystick_profile.c:119:6:JoystickProfile_Update	16	static
