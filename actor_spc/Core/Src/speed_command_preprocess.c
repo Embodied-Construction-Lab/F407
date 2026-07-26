@@ -12,5 +12,14 @@ void SpeedCommandPreprocess_Apply(SpeedCommand *command)
   command->v_boom *= -1000.0f;
   command->v_stick *= -1000.0f;
   command->v_bucket *= -1000.0f;
-  command->yaw_rate *= 57.2957795f * 0.7f;
+  if (command->yaw_rate > 0.34f)
+  {
+    command->yaw_rate = 0.34f;
+  }
+  else if (command->yaw_rate < -0.34f)
+  {
+    command->yaw_rate = -0.34f;
+  }
+
+  command->yaw_rate *= 57.2957795f;
 }

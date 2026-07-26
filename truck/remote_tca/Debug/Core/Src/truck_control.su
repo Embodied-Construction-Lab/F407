@@ -1,0 +1,8 @@
+../Core/Src/truck_control.c:7:14:TruckControl_Absolute	16	static
+../Core/Src/truck_control.c:12:14:TruckControl_Clamp	24	static
+../Core/Src/truck_control.c:25:14:TruckControl_ClampSteeringAxis	16	static
+../Core/Src/truck_control.c:33:14:TruckControl_ClampTcaAxis	16	static
+../Core/Src/truck_control.c:40:6:TruckControl_SetNeutral	16	static
+../Core/Src/truck_control.c:59:6:TruckControl_MapRawCommand	40	static
+../Core/Src/truck_control.c:108:6:TruckControl_IsActiveChannel	16	static
+../Core/Src/truck_control.c:114:6:TruckControl_IsTimedOut	16	static

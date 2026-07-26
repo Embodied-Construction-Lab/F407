@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define JOYSTICK_DEAD_ZONE 0.05f
+#define JOYSTICK_DEAD_ZONE 0.0f
 #define JOYSTICK_CONTROL_TIMEOUT_MS 300U
 #define JOYSTICK_PCA_CHANNEL_COUNT 8U
 
