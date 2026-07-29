@@ -81,6 +81,48 @@ void TruckControl_SetNeutral(TruckOutputs *outputs)
   outputs->lift_percent = 0;
 }
 
+void TruckControl_SetDrivePercent(TruckOutputs *outputs,
+                                  int16_t drive_percent)
+{
+  if (outputs == NULL)
+  {
+    return;
+  }
+  if (drive_percent > 100)
+  {
+    drive_percent = 100;
+  }
+  else if (drive_percent < -100)
+  {
+    drive_percent = -100;
+  }
+
+  outputs->drive_percent = drive_percent;
+  outputs->pwm_count[TRUCK_CHANNEL_DRIVE] =
+      ServoControl_SpeedToPulse((float)drive_percent);
+}
+
+void TruckControl_SetLiftPercent(TruckOutputs *outputs,
+                                 int16_t lift_percent)
+{
+  if (outputs == NULL)
+  {
+    return;
+  }
+  if (lift_percent > TRUCK_LIFT_UP_MAX_PERCENT)
+  {
+    lift_percent = TRUCK_LIFT_UP_MAX_PERCENT;
+  }
+  else if (lift_percent < -TRUCK_LIFT_DOWN_MAX_PERCENT)
+  {
+    lift_percent = -TRUCK_LIFT_DOWN_MAX_PERCENT;
+  }
+
+  outputs->lift_percent = lift_percent;
+  outputs->pwm_count[TRUCK_CHANNEL_LIFT] =
+      ServoControl_SpeedToPulse((float)lift_percent);
+}
+
 void TruckControl_MapRawCommand(const TruckCommand *command,
                                 TruckOutputs *outputs)
 {
@@ -105,29 +147,156 @@ void TruckControl_MapRawCommand(const TruckCommand *command,
 
   if ((command->up != 0U) && (command->down == 0U))
   {
-    lift_speed = 90.0f;
+    lift_speed = (float)TRUCK_LIFT_UP_MAX_PERCENT;
   }
   else if ((command->down != 0U) && (command->up == 0U))
   {
-    lift_speed = -50.0f;
+    lift_speed = -(float)TRUCK_LIFT_DOWN_MAX_PERCENT;
   }
 
   outputs->pwm_count[TRUCK_CHANNEL_STEERING] =
       ServoControl_AngleToPulse(steering_angle);
-  outputs->pwm_count[TRUCK_CHANNEL_DRIVE] =
-      ServoControl_SpeedToPulse(drive);
   outputs->pwm_count[TRUCK_CHANNEL_UNUSED] = 0U;
-  outputs->pwm_count[TRUCK_CHANNEL_LIFT] =
-      ServoControl_SpeedToPulse(lift_speed);
-
   outputs->steering_deg = (int16_t)(steering_angle + 0.5f);
   outputs->throttle_percent = (int16_t)(throttle + 0.5f);
   outputs->brake_percent = (int16_t)(brake + 0.5f);
-  outputs->drive_percent = (int16_t)((drive >= 0.0f) ?
-                                      (drive + 0.5f) : (drive - 0.5f));
-  outputs->lift_percent = (int16_t)((lift_speed >= 0.0f) ?
-                                     (lift_speed + 0.5f) :
-                                     (lift_speed - 0.5f));
+  TruckControl_SetDrivePercent(
+      outputs, (int16_t)((drive >= 0.0f) ?
+                         (drive + 0.5f) : (drive - 0.5f)));
+  TruckControl_SetLiftPercent(
+      outputs, (int16_t)((lift_speed >= 0.0f) ?
+                         (lift_speed + 0.5f) :
+                         (lift_speed - 0.5f)));
+}
+
+void TruckEsc_Init(TruckEscController *controller)
+{
+  if (controller != NULL)
+  {
+    controller->state = TRUCK_ESC_NEUTRAL;
+    controller->state_started_ms = 0U;
+    controller->output_percent = 0;
+  }
+}
+
+void TruckEsc_Reset(TruckEscController *controller)
+{
+  TruckEsc_Init(controller);
+}
+
+int16_t TruckEsc_Update(TruckEscController *controller,
+                        int16_t requested_percent,
+                        uint32_t now_ms)
+{
+  if (controller == NULL)
+  {
+    return 0;
+  }
+  if (requested_percent > 100)
+  {
+    requested_percent = 100;
+  }
+  else if (requested_percent < -100)
+  {
+    requested_percent = -100;
+  }
+
+  switch (controller->state)
+  {
+    case TRUCK_ESC_NEUTRAL:
+      if (requested_percent > 0)
+      {
+        controller->state = TRUCK_ESC_FORWARD;
+        controller->output_percent = requested_percent;
+      }
+      else if (requested_percent < 0)
+      {
+        controller->state = TRUCK_ESC_BRAKE_FOR_REVERSE;
+        controller->state_started_ms = now_ms;
+        controller->output_percent = requested_percent;
+      }
+      else
+      {
+        controller->output_percent = 0;
+      }
+      break;
+
+    case TRUCK_ESC_FORWARD:
+      if (requested_percent < 0)
+      {
+        controller->state = TRUCK_ESC_BRAKE_FOR_REVERSE;
+        controller->state_started_ms = now_ms;
+        controller->output_percent = requested_percent;
+      }
+      else if (requested_percent == 0)
+      {
+        controller->state = TRUCK_ESC_NEUTRAL;
+        controller->output_percent = 0;
+      }
+      else
+      {
+        controller->output_percent = requested_percent;
+      }
+      break;
+
+    case TRUCK_ESC_BRAKE_FOR_REVERSE:
+      if (requested_percent >= 0)
+      {
+        controller->state = (requested_percent > 0) ?
+            TRUCK_ESC_FORWARD : TRUCK_ESC_NEUTRAL;
+        controller->output_percent = requested_percent;
+      }
+      else if ((uint32_t)(now_ms - controller->state_started_ms) >=
+               TRUCK_ESC_BRAKE_TIME_MS)
+      {
+        controller->state = TRUCK_ESC_REVERSE_NEUTRAL;
+        controller->state_started_ms = now_ms;
+        controller->output_percent = 0;
+      }
+      else
+      {
+        controller->output_percent = requested_percent;
+      }
+      break;
+
+    case TRUCK_ESC_REVERSE_NEUTRAL:
+      if (requested_percent >= 0)
+      {
+        controller->state = (requested_percent > 0) ?
+            TRUCK_ESC_FORWARD : TRUCK_ESC_NEUTRAL;
+        controller->output_percent = requested_percent;
+      }
+      else if ((uint32_t)(now_ms - controller->state_started_ms) >=
+               TRUCK_ESC_REVERSE_NEUTRAL_TIME_MS)
+      {
+        controller->state = TRUCK_ESC_REVERSE;
+        controller->output_percent = requested_percent;
+      }
+      else
+      {
+        controller->output_percent = 0;
+      }
+      break;
+
+    case TRUCK_ESC_REVERSE:
+      if (requested_percent < 0)
+      {
+        controller->output_percent = requested_percent;
+      }
+      else
+      {
+        controller->state = (requested_percent > 0) ?
+            TRUCK_ESC_FORWARD : TRUCK_ESC_NEUTRAL;
+        controller->output_percent = requested_percent;
+      }
+      break;
+
+    default:
+      TruckEsc_Reset(controller);
+      break;
+  }
+
+  return controller->output_percent;
 }
 
 bool TruckControl_IsActiveChannel(uint8_t channel)

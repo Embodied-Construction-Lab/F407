@@ -147,29 +147,126 @@ static uint8_t TruckReceiver_FlagFromFloat(float value)
   return (value >= 0.5f) ? 1U : 0U;
 }
 
-bool TruckReceiver_ParseJson(const char *frame, TruckCommand *command)
+static bool TruckReceiver_ParseFlag(const char *frame,
+                                    const char *key,
+                                    uint8_t *value)
+{
+  const char *position;
+  float numeric;
+
+  if (TruckReceiver_ParseNumber(frame, key, &numeric))
+  {
+    *value = TruckReceiver_FlagFromFloat(numeric);
+    return true;
+  }
+
+  position = strstr(frame, key);
+  if (position == NULL)
+  {
+    return false;
+  }
+  position += strlen(key);
+  while (isspace((unsigned char)*position) != 0)
+  {
+    ++position;
+  }
+  if (*position != ':')
+  {
+    return false;
+  }
+  ++position;
+  while (isspace((unsigned char)*position) != 0)
+  {
+    ++position;
+  }
+
+  if (strncmp(position, "true", 4U) == 0)
+  {
+    *value = 1U;
+    return true;
+  }
+  if (strncmp(position, "false", 5U) == 0)
+  {
+    *value = 0U;
+    return true;
+  }
+  return false;
+}
+
+bool TruckReceiver_ParseJsonUpdate(const char *frame,
+                                   TruckCommand *update,
+                                   uint8_t *field_mask)
 {
   TruckCommand parsed = {0};
-  float up;
-  float down;
+  uint8_t mask = 0U;
 
-  if ((frame == NULL) || (command == NULL))
+  if ((frame == NULL) || (update == NULL) || (field_mask == NULL))
   {
     return false;
   }
 
-  if (!TruckReceiver_ParseNumber(frame, "\"steering\"", &parsed.steering) ||
-      !TruckReceiver_ParseNumber(frame, "\"throttle\"", &parsed.throttle) ||
-      !TruckReceiver_ParseNumber(frame, "\"brake\"", &parsed.brake) ||
-      !TruckReceiver_ParseNumber(frame, "\"up\"", &up) ||
-      !TruckReceiver_ParseNumber(frame, "\"down\"", &down))
+  if (strstr(frame, "\"steering\"") != NULL)
+  {
+    if (!TruckReceiver_ParseNumber(frame, "\"steering\"", &parsed.steering))
+    {
+      return false;
+    }
+    mask |= TRUCK_FIELD_STEERING;
+  }
+  if (strstr(frame, "\"throttle\"") != NULL)
+  {
+    if (!TruckReceiver_ParseNumber(frame, "\"throttle\"", &parsed.throttle))
+    {
+      return false;
+    }
+    mask |= TRUCK_FIELD_THROTTLE;
+  }
+  if (strstr(frame, "\"brake\"") != NULL)
+  {
+    if (!TruckReceiver_ParseNumber(frame, "\"brake\"", &parsed.brake))
+    {
+      return false;
+    }
+    mask |= TRUCK_FIELD_BRAKE;
+  }
+  if (strstr(frame, "\"up\"") != NULL)
+  {
+    if (!TruckReceiver_ParseFlag(frame, "\"up\"", &parsed.up))
+    {
+      return false;
+    }
+    mask |= TRUCK_FIELD_UP;
+  }
+  if (strstr(frame, "\"down\"") != NULL)
+  {
+    if (!TruckReceiver_ParseFlag(frame, "\"down\"", &parsed.down))
+    {
+      return false;
+    }
+    mask |= TRUCK_FIELD_DOWN;
+  }
+
+  if (mask == 0U)
   {
     return false;
   }
 
-  parsed.up = TruckReceiver_FlagFromFloat(up);
-  parsed.down = TruckReceiver_FlagFromFloat(down);
+  *update = parsed;
+  *field_mask = mask;
+  return true;
+}
 
+bool TruckReceiver_ParseJson(const char *frame, TruckCommand *command)
+{
+  TruckCommand parsed;
+  uint8_t field_mask;
+
+  if ((command == NULL) ||
+      !TruckReceiver_ParseJsonUpdate(frame, &parsed, &field_mask) ||
+      (field_mask != (uint8_t)TRUCK_FIELD_ALL))
+  {
+    return false;
+  }
   *command = parsed;
   return true;
 }

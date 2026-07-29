@@ -58,23 +58,28 @@ static void test_tca_drive_and_lift_axes(void)
   assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 204U);
 }
 
-static void test_bridge_tca_legacy_fields(void)
+static void test_lift_axis_is_proportional(void)
 {
-  const char *forward_up =
+  TruckCommand command = {0};
+  TruckOutputs outputs;
+
+  command.lift_axis = -0.5f;
+  TruckControl_MapRawCommand(&command, &outputs);
+  assert(outputs.lift_percent == 45);
+
+  command.lift_axis = 0.5f;
+  TruckControl_MapRawCommand(&command, &outputs);
+  assert(outputs.lift_percent == -25);
+}
+
+static void test_legacy_button_fields_are_rejected(void)
+{
+  const char *legacy =
       "{\"type\":\"logi_raw\",\"steering\":0.25,"
       "\"throttle\":-1.0,\"brake\":1.0,\"up\":1,\"down\":0}";
-  const char *reverse_down =
-      "{\"type\":\"logi_raw\",\"steering\":0.25,"
-      "\"throttle\":1.0,\"brake\":-1.0,\"up\":0,\"down\":1}";
   TruckCommand command;
 
-  assert(TruckReceiver_ParseJson(forward_up, &command));
-  assert(command.drive_axis == -1.0f);
-  assert(command.lift_axis == -1.0f);
-
-  assert(TruckReceiver_ParseJson(reverse_down, &command));
-  assert(command.drive_axis == 1.0f);
-  assert(command.lift_axis == 1.0f);
+  assert(!TruckReceiver_ParseJson(legacy, &command));
 }
 
 static void test_split_dma_frame(void)
@@ -118,9 +123,10 @@ int main(void)
 {
   test_tca_json_and_neutral();
   test_tca_drive_and_lift_axes();
-  test_bridge_tca_legacy_fields();
+  test_lift_axis_is_proportional();
+  test_legacy_button_fields_are_rejected();
   test_split_dma_frame();
   test_pwm_timing_and_timeout();
-  puts("F407 truck remote tests passed");
+  puts("F407 truck remote_tca tests passed");
   return 0;
 }

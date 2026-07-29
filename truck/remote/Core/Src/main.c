@@ -24,6 +24,7 @@
 
 #include "oled_ssd1306.h"
 #include "pca9685.h"
+#include "pwm_timing.h"
 #include "truck_control.h"
 #include "truck_receiver.h"
 
@@ -40,11 +41,12 @@
 /* USER CODE BEGIN PD */
 
 #define USART2_DMA_RX_SIZE 256U
-#define STATUS_TX_BUFFER_SIZE 192U
+#define STATUS_TX_BUFFER_SIZE 320U
+#define CONTROL_STATUS_PERIOD_MS 100U
 #define OLED_UPDATE_PERIOD_MS 500U
-#define OLED_PAGE_PERIOD_MS 2000U
 #define OLED_RETRY_PERIOD_MS 1000U
 #define OLED_LINE_SIZE 22U
+#define TRUCK_FIRMWARE_ID "remote-liftdiag-1"
 
 /* USER CODE END PD */
 
@@ -65,7 +67,10 @@ DMA_HandleTypeDef hdma_usart2_rx;
 static uint8_t usart2_dma_rx[USART2_DMA_RX_SIZE];
 static TruckReceiver truck_receiver;
 static TruckCommand latest_command;
+static TruckCommand applied_command;
+static TruckOutputs requested_outputs;
 static TruckOutputs truck_outputs;
+static TruckEscController drive_esc;
 static uint8_t pca9685_ready;
 static uint8_t control_received;
 static uint8_t control_failsafe_active;
@@ -73,12 +78,18 @@ static uint8_t system_ready;
 static uint8_t usart2_rx_ready;
 static uint8_t last_json_valid;
 static uint8_t oled_ready;
-static uint8_t oled_page;
+static uint8_t button_override_active;
+static uint8_t button_override_up;
+static uint8_t button_override_down;
+static uint8_t last_rx_field_mask;
+static uint8_t pca_pwm_cache_valid;
+static uint16_t pca_pwm_cache[TRUCK_OUTPUT_CHANNELS];
 static uint32_t last_valid_control_tick;
+static uint32_t button_override_tick;
+static uint32_t last_periodic_status_tick;
 static uint32_t valid_frame_count;
 static uint32_t invalid_frame_count;
 static uint32_t last_oled_update_tick;
-static uint32_t last_oled_page_tick;
 static uint32_t last_oled_retry_tick;
 static volatile uint8_t usart2_restart_requested;
 static volatile uint8_t usart2_tx_busy;
@@ -100,7 +111,12 @@ static HAL_StatusTypeDef ApplyServoTargets(
     const TruckOutputs *outputs);
 static void SendControlStatus(const char *status,
                               HAL_StatusTypeDef i2c_status);
+static void SendPeriodicControlStatus(const char *status,
+                                      HAL_StatusTypeDef i2c_status,
+                                      uint32_t now_ms);
 static void ProcessReceivedFrames(void);
+static void ServiceButtonOverride(void);
+static void ServiceEscState(void);
 static void ServiceControlFailsafe(void);
 static void ServiceUsart2Restart(void);
 static void ServiceOled(uint32_t now_ms);
@@ -142,9 +158,11 @@ static HAL_StatusTypeDef ApplyServoTargets(
   {
     if (Pca9685_Init(&hi2c1) != HAL_OK)
     {
+      pca_pwm_cache_valid = 0U;
       return HAL_ERROR;
     }
     pca9685_ready = 1U;
+    pca_pwm_cache_valid = 0U;
   }
 
   for (channel = 0U; channel < TRUCK_OUTPUT_CHANNELS; ++channel)
@@ -153,15 +171,23 @@ static HAL_StatusTypeDef ApplyServoTargets(
     {
       continue;
     }
+    if ((pca_pwm_cache_valid != 0U) &&
+        (pca_pwm_cache[channel] == outputs->pwm_count[channel]))
+    {
+      continue;
+    }
 
     if (Pca9685_SetPwm(&hi2c1, channel, 0U,
                        outputs->pwm_count[channel]) != HAL_OK)
     {
       pca9685_ready = 0U;
+      pca_pwm_cache_valid = 0U;
       return HAL_ERROR;
     }
+    pca_pwm_cache[channel] = outputs->pwm_count[channel];
   }
 
+  pca_pwm_cache_valid = 1U;
   return HAL_OK;
 }
 
@@ -178,15 +204,26 @@ static void SendControlStatus(const char *status,
   length = snprintf(
       status_tx_buffer, sizeof(status_tx_buffer),
       "{\"type\":\"truck\",\"status\":\"%s\",\"i2c\":%u,"
+      "\"fw\":\"" TRUCK_FIRMWARE_ID "\","
+      "\"rx_mask\":%u,\"rx_up\":%u,\"rx_down\":%u,"
+      "\"up\":%u,\"down\":%u,\"button_override\":%u,"
       "\"steering_deg\":%d,\"throttle\":%d,\"brake\":%d,"
-      "\"drive\":%d,\"lift\":%d,\"pwm\":[%u,%u,%u,%u]}\r\n",
+      "\"drive\":%d,\"lift\":%d,\"esc\":%u,"
+      "\"pwm\":[%u,%u,%u,%u]}\r\n",
       status,
       (i2c_status == HAL_OK) ? 1U : 0U,
+      (unsigned int)last_rx_field_mask,
+      (unsigned int)latest_command.up,
+      (unsigned int)latest_command.down,
+      (unsigned int)applied_command.up,
+      (unsigned int)applied_command.down,
+      (unsigned int)button_override_active,
       (int)truck_outputs.steering_deg,
       (int)truck_outputs.throttle_percent,
       (int)truck_outputs.brake_percent,
       (int)truck_outputs.drive_percent,
       (int)truck_outputs.lift_percent,
+      (unsigned int)drive_esc.state,
       (unsigned int)truck_outputs.pwm_count[0],
       (unsigned int)truck_outputs.pwm_count[1],
       (unsigned int)truck_outputs.pwm_count[2],
@@ -204,31 +241,194 @@ static void SendControlStatus(const char *status,
   }
 }
 
+static void SendPeriodicControlStatus(const char *status,
+                                      HAL_StatusTypeDef i2c_status,
+                                      uint32_t now_ms)
+{
+  if ((uint32_t)(now_ms - last_periodic_status_tick) <
+      CONTROL_STATUS_PERIOD_MS)
+  {
+    return;
+  }
+
+  last_periodic_status_tick = now_ms;
+  SendControlStatus(status, i2c_status);
+}
+
+static void UpdateEscFilteredOutputs(uint32_t now_ms)
+{
+  int16_t filtered_drive;
+
+  truck_outputs = requested_outputs;
+  filtered_drive = TruckEsc_Update(&drive_esc,
+                                    requested_outputs.drive_percent,
+                                    now_ms);
+  TruckControl_SetDrivePercent(&truck_outputs, filtered_drive);
+}
+
+static void BuildAppliedCommand(void)
+{
+  applied_command = latest_command;
+  if (button_override_active != 0U)
+  {
+    applied_command.up = button_override_up;
+    applied_command.down = button_override_down;
+  }
+}
+
+static void ApplyCommandUpdate(const TruckCommand *update,
+                               uint8_t field_mask,
+                               uint32_t now_ms)
+{
+  const uint8_t analog_mask = TRUCK_FIELD_STEERING |
+      TRUCK_FIELD_THROTTLE | TRUCK_FIELD_BRAKE;
+  const uint8_t button_mask = TRUCK_FIELD_UP | TRUCK_FIELD_DOWN;
+  const uint8_t is_button_only =
+      (((field_mask & analog_mask) == 0U) &&
+       ((field_mask & button_mask) != 0U)) ? 1U : 0U;
+
+  if ((field_mask & TRUCK_FIELD_STEERING) != 0U)
+  {
+    latest_command.steering = update->steering;
+  }
+  if ((field_mask & TRUCK_FIELD_THROTTLE) != 0U)
+  {
+    latest_command.throttle = update->throttle;
+  }
+  if ((field_mask & TRUCK_FIELD_BRAKE) != 0U)
+  {
+    latest_command.brake = update->brake;
+  }
+
+  if (is_button_only != 0U)
+  {
+    if (button_override_active == 0U)
+    {
+      button_override_up = 0U;
+      button_override_down = 0U;
+    }
+    if ((field_mask & TRUCK_FIELD_UP) != 0U)
+    {
+      button_override_up = update->up;
+      if (update->up != 0U)
+      {
+        button_override_down = 0U;
+      }
+    }
+    if ((field_mask & TRUCK_FIELD_DOWN) != 0U)
+    {
+      button_override_down = update->down;
+      if (update->down != 0U)
+      {
+        button_override_up = 0U;
+      }
+    }
+
+    button_override_active =
+        ((button_override_up != 0U) || (button_override_down != 0U)) ?
+        1U : 0U;
+    button_override_tick = now_ms;
+  }
+  else
+  {
+    if ((field_mask & TRUCK_FIELD_UP) != 0U)
+    {
+      latest_command.up = update->up;
+    }
+    if ((field_mask & TRUCK_FIELD_DOWN) != 0U)
+    {
+      latest_command.down = update->down;
+    }
+  }
+
+  BuildAppliedCommand();
+}
+
 static void ProcessReceivedFrames(void)
 {
   char frame[TRUCK_FRAME_MAX_LEN];
+  uint8_t received_valid_frame = 0U;
+  uint8_t received_invalid_frame = 0U;
+  uint32_t now_ms = HAL_GetTick();
 
   while (TruckReceiver_Pop(&truck_receiver, frame, sizeof(frame)))
   {
-    HAL_StatusTypeDef i2c_status;
+    TruckCommand update;
+    uint8_t field_mask;
 
-    if (!TruckReceiver_ParseJson(frame, &latest_command))
+    if (!TruckReceiver_ParseJsonUpdate(frame, &update, &field_mask))
     {
       invalid_frame_count++;
       last_json_valid = 0U;
-      SendControlStatus("invalid_json", HAL_ERROR);
+      received_invalid_frame = 1U;
       continue;
     }
 
     valid_frame_count++;
     last_json_valid = 1U;
-    TruckControl_MapRawCommand(&latest_command, &truck_outputs);
+    last_rx_field_mask = field_mask;
+    now_ms = HAL_GetTick();
+    ApplyCommandUpdate(&update, field_mask, now_ms);
+    received_valid_frame = 1U;
+  }
+
+  if (received_valid_frame != 0U)
+  {
+    HAL_StatusTypeDef i2c_status;
+
+    now_ms = HAL_GetTick();
+    TruckControl_MapRawCommand(&applied_command, &requested_outputs);
+    UpdateEscFilteredOutputs(now_ms);
     i2c_status = ApplyServoTargets(&truck_outputs);
-    last_valid_control_tick = HAL_GetTick();
+    last_valid_control_tick = now_ms;
     control_received = 1U;
     control_failsafe_active = 0U;
-    SendControlStatus("applied", i2c_status);
+    SendPeriodicControlStatus("applied", i2c_status, now_ms);
   }
+  else if (received_invalid_frame != 0U)
+  {
+    SendPeriodicControlStatus("invalid_json", HAL_ERROR, HAL_GetTick());
+  }
+}
+
+static void ServiceButtonOverride(void)
+{
+  HAL_StatusTypeDef i2c_status;
+
+  if ((button_override_active == 0U) ||
+      ((uint32_t)(HAL_GetTick() - button_override_tick) <=
+       TRUCK_BUTTON_OVERRIDE_TIMEOUT_MS))
+  {
+    return;
+  }
+
+  button_override_active = 0U;
+  button_override_up = 0U;
+  button_override_down = 0U;
+  BuildAppliedCommand();
+  TruckControl_MapRawCommand(&applied_command, &requested_outputs);
+  UpdateEscFilteredOutputs(HAL_GetTick());
+  i2c_status = ApplyServoTargets(&truck_outputs);
+  SendControlStatus("button_timeout", i2c_status);
+}
+
+static void ServiceEscState(void)
+{
+  const uint16_t previous_drive_pwm =
+      truck_outputs.pwm_count[TRUCK_CHANNEL_DRIVE];
+  const TruckEscState previous_state = drive_esc.state;
+  HAL_StatusTypeDef i2c_status;
+
+  UpdateEscFilteredOutputs(HAL_GetTick());
+  if ((truck_outputs.pwm_count[TRUCK_CHANNEL_DRIVE] ==
+       previous_drive_pwm) &&
+      (drive_esc.state == previous_state))
+  {
+    return;
+  }
+
+  i2c_status = ApplyServoTargets(&truck_outputs);
+  SendControlStatus("esc_state", i2c_status);
 }
 
 static void ServiceControlFailsafe(void)
@@ -241,7 +441,9 @@ static void ServiceControlFailsafe(void)
     return;
   }
 
-  TruckControl_SetNeutral(&truck_outputs);
+  TruckControl_SetNeutral(&requested_outputs);
+  TruckEsc_Reset(&drive_esc);
+  truck_outputs = requested_outputs;
   i2c_status = ApplyServoTargets(&truck_outputs);
   control_failsafe_active = 1U;
   SendControlStatus("failsafe", i2c_status);
@@ -291,60 +493,52 @@ static void FormatAxis(char *buffer, size_t size, float value)
                  (unsigned long)(magnitude % 1000U));
 }
 
-static void OledDrawStatusPage(void)
-{
-  char line[OLED_LINE_SIZE];
-
-  OledSsd1306_WriteText(0U, 0U, system_ready ? "BOOT:OK" : "BOOT:NO");
-  OledSsd1306_WriteText(1U, 0U, usart2_rx_ready ? "UART:OK" : "UART:NO");
-  OledSsd1306_WriteText(2U, 0U,
-                        (control_received && !control_failsafe_active) ?
-                        "RX:OK" : "RX:NO");
-  OledSsd1306_WriteText(3U, 0U,
-                        last_json_valid ? "PARSE:OK" : "PARSE:NO");
-  OledSsd1306_WriteText(4U, 0U, pca9685_ready ? "PCA:OK" : "PCA:NO");
-  OledSsd1306_WriteText(5U, 0U, "OLED:OK");
-
-  (void)snprintf(line, sizeof(line), "GOOD:%lu",
-                 (unsigned long)valid_frame_count);
-  OledSsd1306_WriteText(6U, 0U, line);
-  (void)snprintf(line, sizeof(line), "BAD:%lu DROP:%lu",
-                 (unsigned long)invalid_frame_count,
-                 (unsigned long)truck_receiver.dropped_frames);
-  OledSsd1306_WriteText(7U, 0U, line);
-}
-
-static void OledDrawDataPage(void)
+static void OledDrawTelemetry(void)
 {
   char line[OLED_LINE_SIZE];
   char axis[10];
+  uint16_t pulse_us;
 
-  FormatAxis(axis, sizeof(axis), latest_command.steering);
-  (void)snprintf(line, sizeof(line), "STR:%s", axis);
+  FormatAxis(axis, sizeof(axis), applied_command.steering);
+  (void)snprintf(line, sizeof(line), "AX0:%s", axis);
   OledSsd1306_WriteText(0U, 0U, line);
 
-  FormatAxis(axis, sizeof(axis), latest_command.throttle);
-  (void)snprintf(line, sizeof(line), "THR:%s", axis);
+  FormatAxis(axis, sizeof(axis), applied_command.throttle);
+  (void)snprintf(line, sizeof(line), "AX1:%s", axis);
   OledSsd1306_WriteText(1U, 0U, line);
 
-  FormatAxis(axis, sizeof(axis), latest_command.brake);
-  (void)snprintf(line, sizeof(line), "BRK:%s", axis);
+  FormatAxis(axis, sizeof(axis), applied_command.brake);
+  (void)snprintf(line, sizeof(line), "AX2:%s", axis);
   OledSsd1306_WriteText(2U, 0U, line);
 
-  (void)snprintf(line, sizeof(line), "UP:%u DN:%u",
-                 latest_command.up, latest_command.down);
+  pulse_us = PwmTiming_DefaultCountToPulseUs(
+      truck_outputs.pwm_count[TRUCK_CHANNEL_STEERING]);
+  (void)snprintf(line, sizeof(line), "PW0:%uus",
+                 (unsigned int)pulse_us);
   OledSsd1306_WriteText(3U, 0U, line);
-  (void)snprintf(line, sizeof(line), "DEG:%d",
-                 (int)truck_outputs.steering_deg);
+
+  pulse_us = PwmTiming_DefaultCountToPulseUs(
+      truck_outputs.pwm_count[TRUCK_CHANNEL_LIFT]);
+  (void)snprintf(line, sizeof(line), "PW1:%uus",
+                 (unsigned int)pulse_us);
   OledSsd1306_WriteText(4U, 0U, line);
-  (void)snprintf(line, sizeof(line), "DRV:%d",
-                 (int)truck_outputs.drive_percent);
+
+  pulse_us = PwmTiming_DefaultCountToPulseUs(
+      truck_outputs.pwm_count[TRUCK_CHANNEL_DRIVE]);
+  (void)snprintf(line, sizeof(line), "PW2:%uus",
+                 (unsigned int)pulse_us);
   OledSsd1306_WriteText(5U, 0U, line);
-  (void)snprintf(line, sizeof(line), "LFT:%d",
-                 (int)truck_outputs.lift_percent);
+
+  (void)snprintf(line, sizeof(line), "I1:%s I2:%s",
+                 (HAL_I2C_GetState(&hi2c1) == HAL_I2C_STATE_READY) ?
+                 "OK" : "NO",
+                 (HAL_I2C_GetState(&hi2c2) == HAL_I2C_STATE_READY) ?
+                 "OK" : "NO");
   OledSsd1306_WriteText(6U, 0U, line);
-  (void)snprintf(line, sizeof(line), "FS:%u I2C:%u",
-                 control_failsafe_active, pca9685_ready);
+
+  (void)snprintf(line, sizeof(line), "U2:%s PCA:%s",
+                 usart2_rx_ready ? "OK" : "NO",
+                 pca9685_ready ? "OK" : "NO");
   OledSsd1306_WriteText(7U, 0U, line);
 }
 
@@ -364,13 +558,6 @@ static void ServiceOled(uint32_t now_ms)
     }
     oled_ready = 1U;
     last_oled_update_tick = now_ms - OLED_UPDATE_PERIOD_MS;
-    last_oled_page_tick = now_ms;
-  }
-
-  if ((uint32_t)(now_ms - last_oled_page_tick) >= OLED_PAGE_PERIOD_MS)
-  {
-    oled_page ^= 1U;
-    last_oled_page_tick = now_ms;
   }
 
   if ((uint32_t)(now_ms - last_oled_update_tick) < OLED_UPDATE_PERIOD_MS)
@@ -380,14 +567,7 @@ static void ServiceOled(uint32_t now_ms)
   last_oled_update_tick = now_ms;
 
   OledSsd1306_Clear();
-  if (oled_page == 0U)
-  {
-    OledDrawStatusPage();
-  }
-  else
-  {
-    OledDrawDataPage();
-  }
+  OledDrawTelemetry();
 
   if (OledSsd1306_Update() != HAL_OK)
   {
@@ -434,7 +614,15 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   TruckReceiver_Init(&truck_receiver);
-  TruckControl_SetNeutral(&truck_outputs);
+  latest_command.steering = 0.0f;
+  latest_command.throttle = TRUCK_PEDAL_RELEASED_RAW;
+  latest_command.brake = TRUCK_PEDAL_RELEASED_RAW;
+  latest_command.up = 0U;
+  latest_command.down = 0U;
+  BuildAppliedCommand();
+  TruckControl_SetNeutral(&requested_outputs);
+  TruckEsc_Init(&drive_esc);
+  truck_outputs = requested_outputs;
   if (USART2_StartReceiveToIdle() != HAL_OK)
   {
     Error_Handler();
@@ -442,7 +630,7 @@ int main(void)
   last_oled_retry_tick = HAL_GetTick();
   oled_ready = (OledSsd1306_Init(&hi2c2) == HAL_OK) ? 1U : 0U;
   last_oled_update_tick = HAL_GetTick() - OLED_UPDATE_PERIOD_MS;
-  last_oled_page_tick = HAL_GetTick();
+  last_periodic_status_tick = HAL_GetTick() - CONTROL_STATUS_PERIOD_MS;
   system_ready = 1U;
   SendControlStatus("ready", ApplyServoTargets(&truck_outputs));
 
@@ -453,6 +641,8 @@ int main(void)
   while (1)
   {
     ProcessReceivedFrames();
+    ServiceButtonOverride();
+    ServiceEscState();
     ServiceControlFailsafe();
     ServiceUsart2Restart();
     ServiceOled(HAL_GetTick());
@@ -525,7 +715,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -559,7 +749,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.ClockSpeed = 400000;
   hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;

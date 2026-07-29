@@ -28,8 +28,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
  ../Core/Inc/oled_ssd1306.h ../Core/Inc/pca9685.h \
- ../Core/Inc/truck_control.h ../Core/Inc/truck_receiver.h \
- ../Core/Inc/truck_receiver.h
+ ../Core/Inc/pwm_timing.h ../Core/Inc/truck_control.h \
+ ../Core/Inc/truck_receiver.h ../Core/Inc/truck_receiver.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -61,6 +61,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
 ../Core/Inc/oled_ssd1306.h:
 ../Core/Inc/pca9685.h:
+../Core/Inc/pwm_timing.h:
 ../Core/Inc/truck_control.h:
 ../Core/Inc/truck_receiver.h:
 ../Core/Inc/truck_receiver.h:

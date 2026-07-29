@@ -17,6 +17,18 @@ typedef struct
   uint8_t down;
 } TruckCommand;
 
+typedef enum
+{
+  TRUCK_FIELD_STEERING = (1U << 0),
+  TRUCK_FIELD_THROTTLE = (1U << 1),
+  TRUCK_FIELD_BRAKE = (1U << 2),
+  TRUCK_FIELD_UP = (1U << 3),
+  TRUCK_FIELD_DOWN = (1U << 4),
+  TRUCK_FIELD_ALL = TRUCK_FIELD_STEERING | TRUCK_FIELD_THROTTLE |
+                    TRUCK_FIELD_BRAKE | TRUCK_FIELD_UP |
+                    TRUCK_FIELD_DOWN
+} TruckCommandField;
+
 typedef struct
 {
   char current[TRUCK_FRAME_MAX_LEN];
@@ -37,5 +49,8 @@ bool TruckReceiver_Pop(TruckReceiver *receiver,
                        char *frame,
                        size_t frame_capacity);
 bool TruckReceiver_ParseJson(const char *frame, TruckCommand *command);
+bool TruckReceiver_ParseJsonUpdate(const char *frame,
+                                   TruckCommand *update,
+                                   uint8_t *field_mask);
 
 #endif /* TRUCK_RECEIVER_H */

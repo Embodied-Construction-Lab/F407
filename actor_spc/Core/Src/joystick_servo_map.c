@@ -80,7 +80,7 @@ void JoystickServoMap_Compute(float x1, float x2, float y1, float y2,
   targets->bucket_deg = 90.0f + x2 * 45.0f;
   targets->big_arm_deg = 90.0f + y2 * 45.0f;
   targets->small_arm_deg = 90.0f + y1 * 45.0f;
-  targets->swing_percent = x1 * 20.0f;
+  targets->swing_percent = x1 * 30.0f;
 
   pump_axis = 0.0f;
   if (absolute(y1) > pump_axis)

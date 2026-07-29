@@ -8,8 +8,13 @@
 
 #define TRUCK_OUTPUT_CHANNELS 4U
 #define TRUCK_CONTROL_TIMEOUT_MS 300U
-#define TRUCK_STEERING_DEAD_ZONE 0.02f
-#define TRUCK_DRIVE_MAX_PERCENT 50.0f
+#define TRUCK_BUTTON_OVERRIDE_TIMEOUT_MS 300U
+#define TRUCK_STEERING_DEAD_ZONE 0.0f
+#define TRUCK_DRIVE_MAX_PERCENT 20.0f
+#define TRUCK_LIFT_UP_MAX_PERCENT 50
+#define TRUCK_LIFT_DOWN_MAX_PERCENT 50
+#define TRUCK_ESC_BRAKE_TIME_MS 300U
+#define TRUCK_ESC_REVERSE_NEUTRAL_TIME_MS 200U
 
 /* Logitech raw-axis calibration. Swap the two pedal endpoints if needed. */
 #define TRUCK_STEERING_DIRECTION 1.0f
@@ -23,7 +28,6 @@ typedef enum
   TRUCK_CHANNEL_DRIVE = 2,
   TRUCK_CHANNEL_UNUSED = 3
 } TruckPcaChannel;
-
 typedef struct
 {
   uint16_t pwm_count[TRUCK_OUTPUT_CHANNELS];
@@ -34,9 +38,34 @@ typedef struct
   int16_t lift_percent;
 } TruckOutputs;
 
+typedef enum
+{
+  TRUCK_ESC_NEUTRAL = 0,
+  TRUCK_ESC_FORWARD,
+  TRUCK_ESC_BRAKE_FOR_REVERSE,
+  TRUCK_ESC_REVERSE_NEUTRAL,
+  TRUCK_ESC_REVERSE
+} TruckEscState;
+
+typedef struct
+{
+  TruckEscState state;
+  uint32_t state_started_ms;
+  int16_t output_percent;
+} TruckEscController;
+
 void TruckControl_SetNeutral(TruckOutputs *outputs);
 void TruckControl_MapRawCommand(const TruckCommand *command,
                                 TruckOutputs *outputs);
+void TruckControl_SetDrivePercent(TruckOutputs *outputs,
+                                  int16_t drive_percent);
+void TruckControl_SetLiftPercent(TruckOutputs *outputs,
+                                 int16_t lift_percent);
+void TruckEsc_Init(TruckEscController *controller);
+void TruckEsc_Reset(TruckEscController *controller);
+int16_t TruckEsc_Update(TruckEscController *controller,
+                        int16_t requested_percent,
+                        uint32_t now_ms);
 bool TruckControl_IsActiveChannel(uint8_t channel);
 bool TruckControl_IsTimedOut(uint32_t now_ms, uint32_t last_valid_ms);
 
