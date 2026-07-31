@@ -23,9 +23,9 @@ static void test_bridge_json_and_neutral(void)
   assert(outputs.brake_percent == 0);
   assert(outputs.drive_percent == 0);
   assert(outputs.lift_percent == 0);
-  assert(outputs.pwm_count[TRUCK_CHANNEL_STEERING] == 306U);
-  assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 306U);
-  assert(outputs.pwm_count[TRUCK_CHANNEL_DRIVE] == 306U);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_STEERING] == 307U);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 307U);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_DRIVE] == 307U);
   assert(outputs.pwm_count[TRUCK_CHANNEL_UNUSED] == 0U);
 }
 
@@ -43,8 +43,8 @@ static void test_throttle_brake_and_lift(void)
   assert(outputs.drive_percent == 20);
   assert(outputs.lift_percent == 50);
   assert(outputs.pwm_count[TRUCK_CHANNEL_STEERING] == 102U);
-  assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 409U);
-  assert(outputs.pwm_count[TRUCK_CHANNEL_DRIVE] == 347U);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 410U);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_DRIVE] == 348U);
   assert(outputs.pwm_count[TRUCK_CHANNEL_UNUSED] == 0U);
 
   command.brake = -1.0f;
@@ -54,13 +54,13 @@ static void test_throttle_brake_and_lift(void)
   assert(outputs.drive_percent == -20);
   assert(outputs.lift_percent == 0);
   assert(outputs.pwm_count[TRUCK_CHANNEL_DRIVE] == 266U);
-  assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 306U);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 307U);
 
   command.up = 0U;
   command.down = 1U;
   TruckControl_MapRawCommand(&command, &outputs);
   assert(outputs.lift_percent == -50);
-  assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 204U);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 205U);
 }
 
 static void test_lift_limit_is_applied_by_output_setter(void)
@@ -134,9 +134,9 @@ static void test_pwm_timing_and_timeout(void)
   assert(PwmTiming_CalculatePrescale(PWM_OSCILLATOR_HZ,
                                      PWM_TARGET_FREQUENCY_HZ) == 133U);
   assert(PwmTiming_DefaultPulseUsToCount(500U) == 102U);
-  assert(PwmTiming_DefaultPulseUsToCount(1500U) == 306U);
-  assert(PwmTiming_DefaultPulseUsToCount(2500U) == 511U);
-  assert(PwmTiming_DefaultCountToPulseUs(306U) == 1498U);
+  assert(PwmTiming_DefaultPulseUsToCount(1500U) == 307U);
+  assert(PwmTiming_DefaultPulseUsToCount(2500U) == 512U);
+  assert(PwmTiming_DefaultCountToPulseUs(307U) == 1499U);
   assert(TruckControl_IsActiveChannel(TRUCK_CHANNEL_STEERING));
   assert(!TruckControl_IsActiveChannel(TRUCK_CHANNEL_UNUSED));
   assert(!TruckControl_IsTimedOut(1300U, 1000U));

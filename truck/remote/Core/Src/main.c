@@ -43,6 +43,12 @@
 #define USART2_DMA_RX_SIZE 256U
 #define STATUS_TX_BUFFER_SIZE 320U
 #define CONTROL_STATUS_PERIOD_MS 100U
+#define ADC_SAMPLE_PERIOD_MS 20U
+#define ADC_REFERENCE_MV 3300U
+#define ADC_FULL_SCALE_COUNT 4095U
+#define STEERING_CENTER_MV 1630
+#define STEERING_MIN_ANGLE_TENTHS (-300)
+#define STEERING_MAX_ANGLE_TENTHS 300
 #define OLED_UPDATE_PERIOD_MS 500U
 #define OLED_RETRY_PERIOD_MS 1000U
 #define OLED_LINE_SIZE 22U
@@ -83,7 +89,12 @@ static uint8_t button_override_up;
 static uint8_t button_override_down;
 static uint8_t last_rx_field_mask;
 static uint8_t pca_pwm_cache_valid;
+static uint8_t adc_conversion_active;
+static uint8_t steering_feedback_valid;
 static uint16_t pca_pwm_cache[TRUCK_OUTPUT_CHANNELS];
+static uint16_t steering_adc_raw;
+static uint16_t steering_voltage_mv;
+static int16_t vehicle_steering_angle_tenths;
 static uint32_t last_valid_control_tick;
 static uint32_t button_override_tick;
 static uint32_t last_periodic_status_tick;
@@ -91,6 +102,7 @@ static uint32_t valid_frame_count;
 static uint32_t invalid_frame_count;
 static uint32_t last_oled_update_tick;
 static uint32_t last_oled_retry_tick;
+static uint32_t last_adc_sample_tick;
 static volatile uint8_t usart2_restart_requested;
 static volatile uint8_t usart2_tx_busy;
 static char status_tx_buffer[STATUS_TX_BUFFER_SIZE];
@@ -99,6 +111,7 @@ static char status_tx_buffer[STATUS_TX_BUFFER_SIZE];
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_ADC1_Init(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
@@ -119,6 +132,7 @@ static void ServiceButtonOverride(void);
 static void ServiceEscState(void);
 static void ServiceControlFailsafe(void);
 static void ServiceUsart2Restart(void);
+static void ServiceSteeringFeedback(uint32_t now_ms);
 static void ServiceOled(uint32_t now_ms);
 
 /* USER CODE END PFP */
@@ -464,6 +478,55 @@ static void ServiceUsart2Restart(void)
   }
 }
 
+static void ServiceSteeringFeedback(uint32_t now_ms)
+{
+  uint32_t voltage_mv;
+  int32_t angle_tenths;
+
+  if (adc_conversion_active == 0U)
+  {
+    if ((uint32_t)(now_ms - last_adc_sample_tick) < ADC_SAMPLE_PERIOD_MS)
+    {
+      return;
+    }
+
+    last_adc_sample_tick = now_ms;
+    ADC1->CR2 |= ADC_CR2_SWSTART;
+    adc_conversion_active = 1U;
+    return;
+  }
+
+  if ((ADC1->SR & ADC_SR_EOC) == 0U)
+  {
+    return;
+  }
+
+  steering_adc_raw = (uint16_t)ADC1->DR;
+  adc_conversion_active = 0U;
+
+  voltage_mv = ((uint32_t)steering_adc_raw * ADC_REFERENCE_MV +
+                ADC_FULL_SCALE_COUNT / 2U) / ADC_FULL_SCALE_COUNT;
+  steering_voltage_mv = (uint16_t)voltage_mv;
+
+  /*
+   * Calibration:
+   * 1330 mV -> -30.0 deg, 1630 mV -> 0.0 deg,
+   * 1930 mV -> +30.0 deg. Therefore 1 mV equals 0.1 degree.
+   */
+  angle_tenths = (int32_t)steering_voltage_mv - STEERING_CENTER_MV;
+  if (angle_tenths < STEERING_MIN_ANGLE_TENTHS)
+  {
+    angle_tenths = STEERING_MIN_ANGLE_TENTHS;
+  }
+  else if (angle_tenths > STEERING_MAX_ANGLE_TENTHS)
+  {
+    angle_tenths = STEERING_MAX_ANGLE_TENTHS;
+  }
+
+  vehicle_steering_angle_tenths = (int16_t)angle_tenths;
+  steering_feedback_valid = 1U;
+}
+
 static int32_t TruckAxisToMilli(float value)
 {
   float scaled;
@@ -496,19 +559,46 @@ static void FormatAxis(char *buffer, size_t size, float value)
 static void OledDrawTelemetry(void)
 {
   char line[OLED_LINE_SIZE];
-  char axis[10];
+  char axis0[10];
+  char axis1[10];
+  char axis2[10];
+  char angle[8];
   uint16_t pulse_us;
+  uint16_t angle_magnitude;
 
-  FormatAxis(axis, sizeof(axis), applied_command.steering);
-  (void)snprintf(line, sizeof(line), "AX0:%s", axis);
+  FormatAxis(axis0, sizeof(axis0), applied_command.steering);
+  if (steering_feedback_valid != 0U)
+  {
+    angle_magnitude = (uint16_t)
+        ((vehicle_steering_angle_tenths < 0) ?
+         -vehicle_steering_angle_tenths : vehicle_steering_angle_tenths);
+    (void)snprintf(angle, sizeof(angle), "%c%u.%u",
+                   (vehicle_steering_angle_tenths < 0) ? '-' : '+',
+                   (unsigned int)(angle_magnitude / 10U),
+                   (unsigned int)(angle_magnitude % 10U));
+  }
+  else
+  {
+    (void)snprintf(angle, sizeof(angle), "--.-");
+  }
+  (void)snprintf(line, sizeof(line), "A0:%.6s ANG:%.5s", axis0, angle);
   OledSsd1306_WriteText(0U, 0U, line);
 
-  FormatAxis(axis, sizeof(axis), applied_command.throttle);
-  (void)snprintf(line, sizeof(line), "AX1:%s", axis);
+  FormatAxis(axis1, sizeof(axis1), applied_command.throttle);
+  FormatAxis(axis2, sizeof(axis2), applied_command.brake);
+  (void)snprintf(line, sizeof(line), "A1:%.6s A2:%.6s", axis1, axis2);
   OledSsd1306_WriteText(1U, 0U, line);
 
-  FormatAxis(axis, sizeof(axis), applied_command.brake);
-  (void)snprintf(line, sizeof(line), "AX2:%s", axis);
+  if (steering_feedback_valid != 0U)
+  {
+    (void)snprintf(line, sizeof(line), "PA1:%u.%03uV",
+                   (unsigned int)(steering_voltage_mv / 1000U),
+                   (unsigned int)(steering_voltage_mv % 1000U));
+  }
+  else
+  {
+    (void)snprintf(line, sizeof(line), "PA1:----V");
+  }
   OledSsd1306_WriteText(2U, 0U, line);
 
   pulse_us = PwmTiming_DefaultCountToPulseUs(
@@ -608,6 +698,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+  MX_ADC1_Init();
   MX_I2C1_Init();
   MX_I2C2_Init();
   MX_USART2_UART_Init();
@@ -631,6 +722,7 @@ int main(void)
   oled_ready = (OledSsd1306_Init(&hi2c2) == HAL_OK) ? 1U : 0U;
   last_oled_update_tick = HAL_GetTick() - OLED_UPDATE_PERIOD_MS;
   last_periodic_status_tick = HAL_GetTick() - CONTROL_STATUS_PERIOD_MS;
+  last_adc_sample_tick = HAL_GetTick() - ADC_SAMPLE_PERIOD_MS;
   system_ready = 1U;
   SendControlStatus("ready", ApplyServoTargets(&truck_outputs));
 
@@ -645,6 +737,7 @@ int main(void)
     ServiceEscState();
     ServiceControlFailsafe();
     ServiceUsart2Restart();
+    ServiceSteeringFeedback(HAL_GetTick());
     ServiceOled(HAL_GetTick());
 
     /* USER CODE END WHILE */
@@ -697,6 +790,48 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  __HAL_RCC_ADC1_CLK_ENABLE();
+
+  /* APB2 is 84 MHz; divide by four to keep ADC clock at 21 MHz. */
+  ADC->CCR = (ADC->CCR & ~ADC_CCR_ADCPRE) | ADC_CCR_ADCPRE_0;
+
+  ADC1->CR1 = 0U;
+  ADC1->CR2 = ADC_CR2_EOCS;
+  ADC1->SMPR1 = 0U;
+  ADC1->SMPR2 = ADC_SMPR2_SMP1_1 | ADC_SMPR2_SMP1_2;
+  ADC1->SQR1 = 0U;
+  ADC1->SQR2 = 0U;
+  ADC1->SQR3 = 1U;
+  ADC1->CR2 |= ADC_CR2_ADON;
+
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
 }
 
 /**

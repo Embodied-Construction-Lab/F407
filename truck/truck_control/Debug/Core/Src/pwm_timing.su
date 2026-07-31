@@ -1,0 +1,4 @@
+../Core/Src/pwm_timing.c:3:9:PwmTiming_CalculatePrescale	24	static
+../Core/Src/pwm_timing.c:27:10:PwmTiming_PulseUsToCount	112	static
+../Core/Src/pwm_timing.c:50:10:PwmTiming_DefaultPulseUsToCount	24	static
+../Core/Src/pwm_timing.c:57:10:PwmTiming_DefaultCountToPulseUs	104	static
