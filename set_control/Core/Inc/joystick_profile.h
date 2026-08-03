@@ -8,7 +8,7 @@ extern "C" {
 #include <stdint.h>
 
 #ifndef JOYSTICK_PROFILE_X1_ENABLED
-#define JOYSTICK_PROFILE_X1_ENABLED 1U
+#define JOYSTICK_PROFILE_X1_ENABLED 0U
 #endif
 
 #ifndef JOYSTICK_PROFILE_X2_ENABLED

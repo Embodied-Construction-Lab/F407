@@ -95,7 +95,7 @@ void JoystickServoMap_Compute(float x1, float x2, float y1, float y2,
   {
     pump_axis = absolute(y2);
   }
-  targets->pump_percent = -pump_axis * 20.0f;
+  targets->pump_percent = -pump_axis * 40.0f;
   targets->left_drive_percent =  - z1 * 20.0f;
   targets->right_drive_percent =  + z2 * 20.0f;
   update_pwm_counts(targets);

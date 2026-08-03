@@ -7,6 +7,9 @@
 		<item key="WizardProjectsImportPage.STORE_CLOSE_CREATED_PROJECTS_ID" value="false"/>
 		<item key="WizardProjectsImportPage.STORE_HIDE_CONFLICTING_PROJECTS_ID" value="false"/>
 		<list key="WizardProjectsImportPage.STORE_DIRECTORIES">
+			<item value="D:\Database\STM32\F407\truck\truck_control"/>
+			<item value="D:\Database\STM32\F407\set_control"/>
+			<item value="D:\Database\STM32\F407\speed_control"/>
 			<item value="D:\Database\STM32\F407\truck\remote_tca"/>
 			<item value="D:\Database\STM32\F407\actor_spc"/>
 			<item value="D:\Database\STM32\F407\truck\remote"/>
