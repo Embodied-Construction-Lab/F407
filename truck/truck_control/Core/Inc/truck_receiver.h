@@ -10,9 +10,9 @@
 
 typedef struct
 {
-  float steering;
-  float throttle;
-  float brake;
+  float steering;  /* Vehicle steering command in degrees: -30..+30. */
+  float throttle;  /* Drive command: -1 reverse, 0 neutral, +1 forward. */
+  float brake;     /* Brake request: 0..1; any value > 0 forces neutral. */
 } TruckCommand;
 
 typedef enum

@@ -2,9 +2,9 @@
 ../Core/Src/truck_control.c:20:6:TruckControl_SetNeutral	2
 ../Core/Src/truck_control.c:41:6:TruckControl_SetDrivePercent	4
 ../Core/Src/truck_control.c:62:6:TruckControl_SetLiftPercent	4
-../Core/Src/truck_control.c:83:6:TruckControl_MapCommand	6
-../Core/Src/truck_control.c:124:6:TruckEsc_Init	2
-../Core/Src/truck_control.c:134:6:TruckEsc_Reset	1
-../Core/Src/truck_control.c:139:9:TruckEsc_Update	18
-../Core/Src/truck_control.c:254:6:TruckControl_IsActiveChannel	3
-../Core/Src/truck_control.c:260:6:TruckControl_IsTimedOut	1
+../Core/Src/truck_control.c:83:6:TruckControl_MapCommand	7
+../Core/Src/truck_control.c:126:6:TruckEsc_Init	2
+../Core/Src/truck_control.c:136:6:TruckEsc_Reset	1
+../Core/Src/truck_control.c:141:9:TruckEsc_Update	18
+../Core/Src/truck_control.c:256:6:TruckControl_IsActiveChannel	3
+../Core/Src/truck_control.c:262:6:TruckControl_IsTimedOut	1

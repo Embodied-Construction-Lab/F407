@@ -53,10 +53,29 @@ static void test_steering_throttle_and_brake_mapping(void)
   TruckControl_MapCommand(&command, &outputs);
   assert(outputs.steering_deg == 30);
   assert(outputs.pwm_count[TRUCK_CHANNEL_STEERING] == 375U);
-  assert(outputs.drive_percent == -20);
+  assert(outputs.throttle_percent == 100);
+  assert(outputs.brake_percent == 100);
+  assert(outputs.drive_percent == 0);
   assert(outputs.lift_percent == 0);
-  assert(outputs.pwm_count[TRUCK_CHANNEL_DRIVE] == 266U);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_DRIVE] == 307U);
   assert(outputs.pwm_count[TRUCK_CHANNEL_LIFT] == 307U);
+
+  command.steering = 0.0f;
+  command.throttle = -1.0f;
+  command.brake = 0.0f;
+  TruckControl_MapCommand(&command, &outputs);
+  assert(outputs.throttle_percent == -100);
+  assert(outputs.brake_percent == 0);
+  assert(outputs.drive_percent == -20);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_DRIVE] == 266U);
+
+  command.throttle = -0.5f;
+  command.brake = 0.1f;
+  TruckControl_MapCommand(&command, &outputs);
+  assert(outputs.throttle_percent == -50);
+  assert(outputs.brake_percent == 10);
+  assert(outputs.drive_percent == 0);
+  assert(outputs.pwm_count[TRUCK_CHANNEL_DRIVE] == 307U);
 
   command.steering = 50.0f;
   command.throttle = 2.0f;
@@ -89,7 +108,7 @@ static void test_split_dma_frame(void)
 {
   const char *json =
       "{\"type\":\"truck_control\",\"steering\":-12.5,"
-      "\"throttle\":0.5,\"brake\":0.0}\n";
+      "\"throttle\":-0.5,\"brake\":0.0}\n";
   TruckReceiver receiver;
   TruckCommand command;
   char frame[TRUCK_FRAME_MAX_LEN];
@@ -105,7 +124,7 @@ static void test_split_dma_frame(void)
   assert(TruckReceiver_Pop(&receiver, frame, sizeof(frame)));
   assert(TruckReceiver_ParseJson(frame, &command));
   assert(command.steering == -12.5f);
-  assert(command.throttle == 0.5f);
+  assert(command.throttle == -0.5f);
   assert(command.brake == 0.0f);
 }
 

@@ -99,10 +99,10 @@ void TruckControl_MapCommand(const TruckCommand *command,
                                       TRUCK_STEERING_MAX_DEG);
   steering_servo_angle = TRUCK_STEERING_SERVO_CENTER_DEG +
       steering_angle * TRUCK_STEERING_SERVO_DEG_PER_VEHICLE_DEG;
-  throttle = TruckControl_Clamp(command->throttle, 0.0f, 1.0f) *
+  throttle = TruckControl_Clamp(command->throttle, -1.0f, 1.0f) *
       100.0f;
   brake = TruckControl_Clamp(command->brake, 0.0f, 1.0f) * 100.0f;
-  drive = ((brake > 0.0f) ? -brake : throttle) *
+  drive = ((brake > 0.0f) ? 0.0f : throttle) *
       TRUCK_DRIVE_MAX_PERCENT / 100.0f;
 
   outputs->pwm_count[TRUCK_CHANNEL_STEERING] =
@@ -113,7 +113,9 @@ void TruckControl_MapCommand(const TruckCommand *command,
   outputs->steering_deg =
       (int16_t)((steering_angle >= 0.0f) ?
                 (steering_angle + 0.5f) : (steering_angle - 0.5f));
-  outputs->throttle_percent = (int16_t)(throttle + 0.5f);
+  outputs->throttle_percent =
+      (int16_t)((throttle >= 0.0f) ?
+                (throttle + 0.5f) : (throttle - 0.5f));
   outputs->brake_percent = (int16_t)(brake + 0.5f);
   TruckControl_SetDrivePercent(
       outputs, (int16_t)((drive >= 0.0f) ?

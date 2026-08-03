@@ -52,7 +52,7 @@
 #define OLED_UPDATE_PERIOD_MS 200U
 #define OLED_RETRY_PERIOD_MS 1000U
 #define OLED_LINE_SIZE 22U
-#define TRUCK_FIRMWARE_ID "truck-control-jetson-1"
+#define TRUCK_FIRMWARE_ID "truck-control-bidir-1"
 
 /* USER CODE END PD */
 
@@ -124,6 +124,7 @@ static void SendPeriodicControlStatus(const char *status,
                                       HAL_StatusTypeDef i2c_status,
                                       uint32_t now_ms);
 static void FormatUnitValue(char *buffer, size_t size, float value);
+static void FormatSignedUnitValue(char *buffer, size_t size, float value);
 static void ProcessReceivedFrames(void);
 static void ServiceEscState(void);
 static void ServiceControlFailsafe(void);
@@ -258,8 +259,8 @@ static void SendControlStatus(const char *status,
   {
     (void)snprintf(current_angle, sizeof(current_angle), "null");
   }
-  FormatUnitValue(received_throttle, sizeof(received_throttle),
-                  latest_command.throttle);
+  FormatSignedUnitValue(received_throttle, sizeof(received_throttle),
+                        latest_command.throttle);
   FormatUnitValue(received_brake, sizeof(received_brake),
                   latest_command.brake);
 
@@ -526,6 +527,31 @@ static void FormatUnitValue(char *buffer, size_t size, float value)
                  (unsigned long)(milli % 1000U));
 }
 
+static void FormatSignedUnitValue(char *buffer, size_t size, float value)
+{
+  int32_t milli;
+  uint32_t magnitude;
+
+  if (value < -1.0f)
+  {
+    value = -1.0f;
+  }
+  else if (value > 1.0f)
+  {
+    value = 1.0f;
+  }
+
+  milli = (int32_t)((value >= 0.0f) ?
+                    (value * 1000.0f + 0.5f) :
+                    (value * 1000.0f - 0.5f));
+  magnitude = (uint32_t)((milli < 0) ? -milli : milli);
+
+  (void)snprintf(buffer, size, "%s%lu.%03lu",
+                 (milli < 0) ? "-" : "",
+                 (unsigned long)(magnitude / 1000U),
+                 (unsigned long)(magnitude % 1000U));
+}
+
 static void OledDrawTelemetry(void)
 {
   char line[OLED_LINE_SIZE];
@@ -551,7 +577,8 @@ static void OledDrawTelemetry(void)
   (void)snprintf(line, sizeof(line), "CMD:%s deg", command_angle);
   OledSsd1306_WriteText(1U, 0U, line);
 
-  FormatUnitValue(throttle, sizeof(throttle), latest_command.throttle);
+  FormatSignedUnitValue(throttle, sizeof(throttle),
+                        latest_command.throttle);
   (void)snprintf(line, sizeof(line), "THR:%s (%d%%)", throttle,
                  (int)truck_outputs.throttle_percent);
   OledSsd1306_WriteText(2U, 0U, line);

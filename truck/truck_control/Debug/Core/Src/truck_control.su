@@ -3,8 +3,8 @@
 ../Core/Src/truck_control.c:41:6:TruckControl_SetDrivePercent	16	static
 ../Core/Src/truck_control.c:62:6:TruckControl_SetLiftPercent	16	static
 ../Core/Src/truck_control.c:83:6:TruckControl_MapCommand	40	static
-../Core/Src/truck_control.c:124:6:TruckEsc_Init	16	static
-../Core/Src/truck_control.c:134:6:TruckEsc_Reset	16	static
-../Core/Src/truck_control.c:139:9:TruckEsc_Update	24	static
-../Core/Src/truck_control.c:254:6:TruckControl_IsActiveChannel	16	static
-../Core/Src/truck_control.c:260:6:TruckControl_IsTimedOut	16	static
+../Core/Src/truck_control.c:126:6:TruckEsc_Init	16	static
+../Core/Src/truck_control.c:136:6:TruckEsc_Reset	16	static
+../Core/Src/truck_control.c:141:9:TruckEsc_Update	24	static
+../Core/Src/truck_control.c:256:6:TruckControl_IsActiveChannel	16	static
+../Core/Src/truck_control.c:262:6:TruckControl_IsTimedOut	16	static
