@@ -23,6 +23,33 @@ static float clamp_axis(float value)
   return (absolute(value) <= JOYSTICK_DEAD_ZONE) ? 0.0f : value;
 }
 
+static float valve_angle_from_axis(float axis,
+                                   float positive_min_deg,
+                                   float positive_max_deg,
+                                   float negative_min_deg,
+                                   float negative_max_deg)
+{
+  float magnitude;
+
+  if (axis > 0.0f)
+  {
+    magnitude = (axis - JOYSTICK_DEAD_ZONE) /
+                (1.0f - JOYSTICK_DEAD_ZONE);
+    return positive_min_deg +
+           magnitude * (positive_max_deg - positive_min_deg);
+  }
+
+  if (axis < 0.0f)
+  {
+    magnitude = (-axis - JOYSTICK_DEAD_ZONE) /
+                (1.0f - JOYSTICK_DEAD_ZONE);
+    return negative_max_deg -
+           magnitude * (negative_max_deg - negative_min_deg);
+  }
+
+  return JOYSTICK_VALVE_NEUTRAL_DEG;
+}
+
 static void update_pwm_counts(JoystickServoTargets *targets)
 {
   targets->pwm_count[JOYSTICK_CHANNEL_BUCKET] =
@@ -49,9 +76,9 @@ void JoystickServoMap_SetNeutral(JoystickServoTargets *targets)
     return;
   }
 
-  targets->bucket_deg = 90.0f;
-  targets->big_arm_deg = 90.0f;
-  targets->small_arm_deg = 90.0f;
+  targets->bucket_deg = JOYSTICK_VALVE_NEUTRAL_DEG;
+  targets->big_arm_deg = JOYSTICK_VALVE_NEUTRAL_DEG;
+  targets->small_arm_deg = JOYSTICK_VALVE_NEUTRAL_DEG;
   targets->swing_percent = 0.0f;
   targets->pump_percent = 0.0f;
   targets->left_drive_percent = 0.0f;
@@ -63,8 +90,6 @@ void JoystickServoMap_Compute(float x1, float x2, float y1, float y2,
                               float z1, float z2,
                               JoystickServoTargets *targets)
 {
-  float pump_axis;
-
   if (targets == NULL)
   {
     return;
@@ -77,25 +102,29 @@ void JoystickServoMap_Compute(float x1, float x2, float y1, float y2,
   z1 = clamp_axis(z1);
   z2 = clamp_axis(z2);
 
-  targets->bucket_deg = 90.0f + x2 * 45.0f;
-  targets->big_arm_deg = 90.0f + y2 * 45.0f;
-  targets->small_arm_deg = 90.0f + y1 * 45.0f;
-  targets->swing_percent = x1 * 20.0f;
+  targets->bucket_deg = valve_angle_from_axis(
+      x2,
+      JOYSTICK_BUCKET_POSITIVE_MIN_DEG,
+      JOYSTICK_BUCKET_POSITIVE_MAX_DEG,
+      JOYSTICK_BUCKET_NEGATIVE_MIN_DEG,
+      JOYSTICK_BUCKET_NEGATIVE_MAX_DEG);
+  targets->big_arm_deg = valve_angle_from_axis(
+      y2,
+      JOYSTICK_BIG_ARM_POSITIVE_MIN_DEG,
+      JOYSTICK_BIG_ARM_POSITIVE_MAX_DEG,
+      JOYSTICK_BIG_ARM_NEGATIVE_MIN_DEG,
+      JOYSTICK_BIG_ARM_NEGATIVE_MAX_DEG);
+  targets->small_arm_deg = valve_angle_from_axis(
+      y1,
+      JOYSTICK_SMALL_ARM_POSITIVE_MIN_DEG,
+      JOYSTICK_SMALL_ARM_POSITIVE_MAX_DEG,
+      JOYSTICK_SMALL_ARM_NEGATIVE_MIN_DEG,
+      JOYSTICK_SMALL_ARM_NEGATIVE_MAX_DEG);
 
-  pump_axis = 0.0f;
-  if (absolute(y1) > pump_axis)
-  {
-    pump_axis = absolute(y1);
-  }
-  if (absolute(x2) > pump_axis)
-  {
-    pump_axis = absolute(x2);
-  }
-  if (absolute(y2) > pump_axis)
-  {
-    pump_axis = absolute(y2);
-  }
-  targets->pump_percent = -pump_axis * 20.0f;
+  targets->swing_percent = x1 * JOYSTICK_SWING_MAX_PERCENT;
+  targets->pump_percent = ((x2 != 0.0f) || (y2 != 0.0f) || (y1 != 0.0f))
+                              ? JOYSTICK_FIXED_PUMP_PERCENT
+                              : 0.0f;
   targets->left_drive_percent =  - z1 * 20.0f;
   targets->right_drive_percent =  + z2 * 20.0f;
   update_pwm_counts(targets);
