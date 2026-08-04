@@ -28,12 +28,13 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
  ../Core/Inc/arm_angle.h ../Core/Inc/dwj_reader.h \
- ../Core/Inc/ftepc_rs485.h ../Core/Inc/imu_oled_format.h \
- ../Core/Inc/imu_parser.h ../Core/Inc/imu_parser.h \
- ../Core/Inc/joystick_profile.h ../Core/Inc/joystick_servo_map.h \
- ../Core/Inc/motion_telemetry.h ../Core/Inc/oled_ssd1306.h \
- ../Core/Inc/pca9685.h ../Core/Inc/safety_limits.h \
- ../Core/Inc/joystick_profile.h ../Core/Inc/status_led.h
+ ../Core/Inc/ftepc_rs485.h ../Core/Inc/homing_controller.h \
+ ../Core/Inc/safety_limits.h ../Core/Inc/joystick_profile.h \
+ ../Core/Inc/imu_oled_format.h ../Core/Inc/imu_parser.h \
+ ../Core/Inc/imu_parser.h ../Core/Inc/joystick_profile.h \
+ ../Core/Inc/joystick_servo_map.h ../Core/Inc/motion_telemetry.h \
+ ../Core/Inc/oled_ssd1306.h ../Core/Inc/pca9685.h \
+ ../Core/Inc/safety_limits.h ../Core/Inc/status_led.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -66,6 +67,9 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/arm_angle.h:
 ../Core/Inc/dwj_reader.h:
 ../Core/Inc/ftepc_rs485.h:
+../Core/Inc/homing_controller.h:
+../Core/Inc/safety_limits.h:
+../Core/Inc/joystick_profile.h:
 ../Core/Inc/imu_oled_format.h:
 ../Core/Inc/imu_parser.h:
 ../Core/Inc/imu_parser.h:
@@ -75,5 +79,4 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/oled_ssd1306.h:
 ../Core/Inc/pca9685.h:
 ../Core/Inc/safety_limits.h:
-../Core/Inc/joystick_profile.h:
 ../Core/Inc/status_led.h:
