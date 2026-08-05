@@ -1,0 +1,7 @@
+../Core/Src/stick_receiver.c:9:6:StickReceiver_Init	16	static
+../Core/Src/stick_receiver.c:17:6:StickReceiver_FeedFromIsr	32	static
+../Core/Src/stick_receiver.c:85:6:StickReceiver_Pop	32	static
+../Core/Src/stick_receiver.c:108:13:parse_number	40	static
+../Core/Src/stick_receiver.c:147:13:parse_uint32	40	static
+../Core/Src/stick_receiver.c:187:13:parse_direct_data	16	static
+../Core/Src/stick_receiver.c:197:6:StickReceiver_ParseJson	64	static

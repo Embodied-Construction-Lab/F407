@@ -1,0 +1,6 @@
+../Core/Src/arm_angle.c:7:14:ArmAngle_Clamp	3
+../Core/Src/arm_angle.c:20:14:ArmAngle_Sqrt	4
+../Core/Src/arm_angle.c:38:14:ArmAngle_Acos	4
+../Core/Src/arm_angle.c:63:16:ArmAngle_DegToHundredths	2
+../Core/Src/arm_angle.c:75:9:ArmAngle_FromExtensionHundredthsMm	1
+../Core/Src/arm_angle.c:89:9:ArmAngle_Channel2HundredthsDeg	1

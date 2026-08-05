@@ -1,0 +1,8 @@
+../Core/Src/joystick_servo_map.c:7:14:absolute	16	static
+../Core/Src/joystick_servo_map.c:12:14:clamp_axis	16	static
+../Core/Src/joystick_servo_map.c:26:14:valve_angle_from_axis	40	static
+../Core/Src/joystick_servo_map.c:53:13:update_pwm_counts	16	static
+../Core/Src/joystick_servo_map.c:72:6:JoystickServoMap_SetNeutral	16	static
+../Core/Src/joystick_servo_map.c:89:6:JoystickServoMap_Compute	40	static
+../Core/Src/joystick_servo_map.c:133:6:JoystickServoMap_IsActiveChannel	16	static
+../Core/Src/joystick_servo_map.c:139:6:JoystickServoMap_IsTimedOut	16	static
