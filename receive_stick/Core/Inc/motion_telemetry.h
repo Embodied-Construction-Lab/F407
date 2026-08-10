@@ -21,6 +21,11 @@ typedef struct
   float a_bucket;
   float yaw;
   float yaw_rate;
+  float deg_boom;
+  float deg_stick;
+  float deg_bucket;
+  float swing_speed;
+  float pump_speed;
   uint8_t rs485_ok;
   uint8_t adc_ok;
   uint8_t imu_ok;

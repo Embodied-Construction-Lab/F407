@@ -7,8 +7,8 @@ extern "C" {
 
 #include <stdint.h>
 
-#define PID_CONTROLLER_OUTPUT_MIN (-0.9f)
-#define PID_CONTROLLER_OUTPUT_MAX 0.9f
+#define PID_CONTROLLER_OUTPUT_MIN (-1.0f)
+#define PID_CONTROLLER_OUTPUT_MAX 1.0f
 
 typedef struct
 {

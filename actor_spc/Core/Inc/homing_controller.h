@@ -10,7 +10,7 @@ extern "C" {
 #include <stdint.h>
 
 #ifndef HOMING_CONTROLLER_SPEED
-#define HOMING_CONTROLLER_SPEED 0.8f
+#define HOMING_CONTROLLER_SPEED 0.6f
 #endif
 
 #ifndef HOMING_CONTROLLER_BOOM_TARGET_HUNDREDTHS_MM

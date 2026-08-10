@@ -59,8 +59,9 @@ typedef enum
 /* USER CODE BEGIN PD */
 #define USART2_DMA_RX_SIZE 256U
 #define IMU_DMA_RX_SIZE 8192U
+#define DATA_UPDATE_PERIOD_MS 100U
 #define ENCODER485_SLAVE_ADDRESS 1U
-#define ENCODER485_POLL_PERIOD_MS 200U
+#define ENCODER485_POLL_PERIOD_MS DATA_UPDATE_PERIOD_MS
 #define ENCODER485_TIMEOUT_MS 300U
 #define ENCODER485_REQUEST_LEN 8U
 #define ENCODER485_RESPONSE_LEN 17U
@@ -71,9 +72,9 @@ typedef enum
 #define OLED_PAGE_PERIOD_MS 1500U
 #define OLED_PAGE_COUNT 2U
 #define OLED_LINE_SIZE 22U
-#define TELEMETRY_PERIOD_MS 100U
-#define TELEMETRY_BUFFER_SIZE 160U
-#define DWJ_POLL_PERIOD_MS 100U
+#define TELEMETRY_PERIOD_MS DATA_UPDATE_PERIOD_MS
+#define TELEMETRY_BUFFER_SIZE 256U
+#define DWJ_POLL_PERIOD_MS DATA_UPDATE_PERIOD_MS
 
 /* USER CODE END PD */
 
@@ -711,6 +712,11 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   telemetry->a_bucket = (float)dwj_readings.bucket.angle_tenths_deg / 10.0f;
   telemetry->yaw = imu_yaw_deg;
   telemetry->yaw_rate = imu_yaw_rate_deg_s;
+  telemetry->deg_boom = servo_targets.big_arm_deg;
+  telemetry->deg_stick = servo_targets.small_arm_deg;
+  telemetry->deg_bucket = servo_targets.bucket_deg;
+  telemetry->swing_speed = servo_targets.swing_percent;
+  telemetry->pump_speed = servo_targets.pump_percent;
   telemetry->rs485_ok = (encoder_status == FTEPC485_OK) ? 1U : 0U;
   telemetry->adc_ok = (dwj_status == HAL_OK) ? 1U : 0U;
   telemetry->imu_ok = (imu_sample_valid != 0U) ? 1U : 0U;
