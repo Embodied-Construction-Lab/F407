@@ -7,6 +7,7 @@
 
 #define STICK_FRAME_MAX_LEN 384U
 #define STICK_QUEUE_SLOTS 4U
+#define STICK_COMMAND_SCHEMA_VERSION "stm32_manual_command.v1"
 
 typedef struct
 {
@@ -42,5 +43,8 @@ bool StickReceiver_Pop(StickReceiver *receiver,
                        char *frame,
                        size_t frame_capacity);
 bool StickReceiver_ParseJson(const char *frame, StickData *stick);
+bool StickReceiver_IsNewSequence(uint32_t candidate,
+                                 uint32_t previous,
+                                 bool has_previous);
 
 #endif /* STICK_RECEIVER_H */

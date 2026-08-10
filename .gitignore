@@ -1,0 +1,52 @@
+# STM32CubeIDE / Eclipse workspace state (machine-local and reproducible)
+.metadata/
+**/.metadata/
+**/.settings/
+*.launch
+
+# STM32CubeIDE build output directories
+**/Debug/
+**/Release/
+**/.codex-build-workspace/
+
+# Compiler, linker and static-analysis artifacts
+*.o
+*.obj
+*.d
+*.su
+*.cyclo
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+*.lst
+*.srec
+*.out
+*.exe
+
+# Generic build systems and generated indexes
+**/build/
+**/cmake-build-*/
+**/CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# Python helper-script caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+*.tmp
+*.bak
+*.orig
+*.rej

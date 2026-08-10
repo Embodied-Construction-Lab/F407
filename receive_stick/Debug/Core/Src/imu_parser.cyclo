@@ -1,9 +1,0 @@
-../Core/Src/imu_parser.c:5:16:has_header	5
-../Core/Src/imu_parser.c:13:17:read_u32	1
-../Core/Src/imu_parser.c:21:17:read_u64	1
-../Core/Src/imu_parser.c:33:14:read_f32	1
-../Core/Src/imu_parser.c:41:13:decode_frame	1
-../Core/Src/imu_parser.c:47:13:discard_bytes	1
-../Core/Src/imu_parser.c:53:16:process_buffer	5
-../Core/Src/imu_parser.c:87:6:imu_parser_init	1
-../Core/Src/imu_parser.c:92:9:imu_parser_feed	3

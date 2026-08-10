@@ -1,4 +1,0 @@
-../Core/Src/safety_limits.c:5:14:limit_linear_axis	40	static
-../Core/Src/safety_limits.c:28:7:SafetyLimits_NormalizeYawDeg	16	static
-../Core/Src/safety_limits.c:41:6:SafetyLimits_ApplyAxisEnable	16	static
-../Core/Src/safety_limits.c:66:6:SafetyLimits_Apply	24	static

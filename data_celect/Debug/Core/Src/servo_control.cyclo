@@ -1,3 +1,0 @@
-../Core/Src/servo_control.c:5:14:clamp_float	3
-../Core/Src/servo_control.c:18:10:ServoControl_AngleToPulse	1
-../Core/Src/servo_control.c:27:10:ServoControl_SpeedToPulse	2

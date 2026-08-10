@@ -1,2 +1,0 @@
-../Core/Src/status_led.c:5:6:StatusLedTimer_Init	16	static
-../Core/Src/status_led.c:13:6:StatusLedTimer_Poll	16	static

@@ -1,7 +1,0 @@
-../Core/Src/oled_ssd1306.c:15:26:OledSsd1306_WriteCommand	32	static
-../Core/Src/oled_ssd1306.c:23:26:OledSsd1306_WriteData	56	static
-../Core/Src/oled_ssd1306.c:49:13:OledSsd1306_GetGlyph	16	static
-../Core/Src/oled_ssd1306.c:176:19:OledSsd1306_Init	24	static
-../Core/Src/oled_ssd1306.c:221:6:OledSsd1306_Clear	8	static
-../Core/Src/oled_ssd1306.c:226:6:OledSsd1306_WriteText	32	static
-../Core/Src/oled_ssd1306.c:254:19:OledSsd1306_Update	16	static
