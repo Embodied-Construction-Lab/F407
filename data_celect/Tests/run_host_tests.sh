@@ -24,8 +24,14 @@ cc "${common[@]}" \
   "${project_root}/Core/Src/motion_telemetry.c" \
   -o "${build_dir}/motion_telemetry_v2_test"
 
+cc "${common[@]}" -I"${project_root}/Tests/fakes" \
+  "${project_root}/Tests/oled_ssd1306_test.c" \
+  "${project_root}/Core/Src/oled_ssd1306.c" \
+  -o "${build_dir}/oled_ssd1306_test"
+
 "${build_dir}/stick_receiver_test"
 "${build_dir}/manual_action_test"
 "${build_dir}/motion_telemetry_v2_test"
+"${build_dir}/oled_ssd1306_test"
 
 echo "data_celect host tests passed"

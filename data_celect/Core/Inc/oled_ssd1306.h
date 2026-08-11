@@ -16,6 +16,7 @@ extern "C" {
 HAL_StatusTypeDef OledSsd1306_Init(I2C_HandleTypeDef *i2c);
 void OledSsd1306_Clear(void);
 void OledSsd1306_WriteText(uint8_t row, uint8_t column, const char *text);
+HAL_StatusTypeDef OledSsd1306_UpdatePage(uint8_t page);
 HAL_StatusTypeDef OledSsd1306_Update(void);
 
 #ifdef __cplusplus

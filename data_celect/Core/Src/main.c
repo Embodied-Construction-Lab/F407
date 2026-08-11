@@ -139,6 +139,7 @@ static uint32_t rs485_state_tick;
 static uint32_t last_encoder_poll_tick;
 static uint8_t oled_ready;
 static uint8_t oled_page;
+static uint8_t oled_refresh_page;
 static uint32_t last_oled_update_tick;
 static uint32_t last_oled_page_tick;
 static MotionTelemetry motion_telemetry;
@@ -741,22 +742,33 @@ static void ServiceOled(void)
     oled_page = (uint8_t)((oled_page + 1U) % OLED_PAGE_COUNT);
   }
 
-  if ((uint32_t)(now_ms - last_oled_update_tick) < OLED_UPDATE_PERIOD_MS)
+  if (oled_refresh_page >= OLED_SSD1306_ROWS)
   {
+    if ((uint32_t)(now_ms - last_oled_update_tick) < OLED_UPDATE_PERIOD_MS)
+    {
+      return;
+    }
+    last_oled_update_tick = now_ms;
+
+    OledSsd1306_Clear();
+    if (oled_page == 0U)
+    {
+      OledWriteLengthSpeedPage();
+    }
+    else
+    {
+      OledWriteAngleImuPage();
+    }
+    oled_refresh_page = 0U;
+  }
+
+  if (OledSsd1306_UpdatePage(oled_refresh_page) != HAL_OK)
+  {
+    oled_ready = 0U;
+    oled_refresh_page = OLED_SSD1306_ROWS;
     return;
   }
-  last_oled_update_tick = now_ms;
-
-  OledSsd1306_Clear();
-  if (oled_page == 0U)
-  {
-    OledWriteLengthSpeedPage();
-  }
-  else
-  {
-    OledWriteAngleImuPage();
-  }
-  (void)OledSsd1306_Update();
+  oled_refresh_page++;
 }
 
 static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
@@ -985,6 +997,7 @@ int main(void)
   last_encoder_poll_tick = HAL_GetTick();
   last_oled_update_tick = HAL_GetTick();
   last_oled_page_tick = HAL_GetTick();
+  oled_refresh_page = OLED_SSD1306_ROWS;
   last_telemetry_tick = HAL_GetTick();
   last_dwj_poll_tick = HAL_GetTick();
   last_control_tick = HAL_GetTick();
@@ -1009,9 +1022,9 @@ int main(void)
     ServiceControl20Hz();
     ServiceEncoder485();
     ServiceDwjReader();
-    ServiceOled();
     ServiceImu();
     ServiceTelemetry();
+    ServiceOled();
 
     if (usart2_restart_requested != 0U)
     {
