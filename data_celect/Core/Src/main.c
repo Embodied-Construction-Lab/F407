@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "arm_angle.h"
+#include "collection_timing.h"
 #include "dwj_reader.h"
 #include "ftepc_rs485.h"
 #include "imu_oled_format.h"
@@ -60,8 +61,6 @@ typedef enum
 #define USART2_DMA_RX_SIZE 512U
 #define IMU_DMA_RX_SIZE 8192U
 #define ENCODER485_SLAVE_ADDRESS 1U
-#define CONTROL_PERIOD_MS 50U
-#define ENCODER485_POLL_PERIOD_MS 50U
 #define ENCODER485_TIMEOUT_MS 50U
 #define ENCODER485_REQUEST_LEN 8U
 #define ENCODER485_RESPONSE_LEN 17U
@@ -72,7 +71,6 @@ typedef enum
 #define OLED_PAGE_PERIOD_MS 1500U
 #define OLED_PAGE_COUNT 2U
 #define OLED_LINE_SIZE 22U
-#define TELEMETRY_PERIOD_MS 50U
 #define TELEMETRY_BUFFER_SIZE 1024U
 #define DWJ_POLL_PERIOD_MS 50U
 
@@ -294,7 +292,8 @@ static void ServiceControl20Hz(void)
   HAL_StatusTypeDef i2c_status;
   uint8_t command_valid;
 
-  if ((uint32_t)(now_ms - last_control_tick) < CONTROL_PERIOD_MS)
+  if ((uint32_t)(now_ms - last_control_tick) <
+      COLLECTION_CONTROL_PERIOD_MS)
   {
     return;
   }
@@ -651,7 +650,7 @@ static void ServiceEncoder485(void)
   }
 
   if ((uint32_t)(now_ms - last_encoder_poll_tick) >=
-      ENCODER485_POLL_PERIOD_MS)
+      COLLECTION_SENSOR_PERIOD_MS)
   {
     last_encoder_poll_tick = now_ms;
     Rs485_StartPoll(now_ms);
@@ -923,7 +922,8 @@ static void ServiceTelemetry(void)
   }
 
   now_ms = HAL_GetTick();
-  if ((uint32_t)(now_ms - last_telemetry_tick) < TELEMETRY_PERIOD_MS)
+  if ((uint32_t)(now_ms - last_telemetry_tick) <
+      COLLECTION_TELEMETRY_PERIOD_MS)
   {
     return;
   }
