@@ -1,9 +1,7 @@
 #include "stick_receiver.h"
 
-#include <ctype.h>
-#include <errno.h>
-#include <math.h>
-#include <stdlib.h>
+#include "control_command.h"
+
 #include <string.h>
 
 void StickReceiver_Init(StickReceiver *receiver)
@@ -105,163 +103,28 @@ bool StickReceiver_Pop(StickReceiver *receiver,
   return true;
 }
 
-static bool parse_number(const char *frame, const char *key, float *value)
-{
-  const char *position = frame;
-  const size_t key_length = strlen(key);
-
-  while ((position = strstr(position, key)) != NULL)
-  {
-    char *end;
-    float parsed;
-
-    position += key_length;
-    while (isspace((unsigned char)*position) != 0)
-    {
-      ++position;
-    }
-    if (*position != ':')
-    {
-      continue;
-    }
-    ++position;
-    while (isspace((unsigned char)*position) != 0)
-    {
-      ++position;
-    }
-
-    errno = 0;
-    parsed = strtof(position, &end);
-    if ((end == position) || (errno == ERANGE) || !isfinite(parsed))
-    {
-      return false;
-    }
-
-    *value = parsed;
-    return true;
-  }
-
-  return false;
-}
-
-static bool parse_uint32(const char *frame, const char *key, uint32_t *value)
-{
-  const char *position = frame;
-  const size_t key_length = strlen(key);
-
-  while ((position = strstr(position, key)) != NULL)
-  {
-    char *end;
-    unsigned long parsed;
-
-    position += key_length;
-    while (isspace((unsigned char)*position) != 0)
-    {
-      ++position;
-    }
-    if (*position != ':')
-    {
-      continue;
-    }
-    ++position;
-    while (isspace((unsigned char)*position) != 0)
-    {
-      ++position;
-    }
-
-    errno = 0;
-    parsed = strtoul(position, &end, 10);
-    if ((end == position) || (errno == ERANGE) ||
-        (parsed > UINT32_MAX))
-    {
-      return false;
-    }
-
-    *value = (uint32_t)parsed;
-    return true;
-  }
-
-  return false;
-}
-
-static bool parse_direct_data(const char *frame, StickData *stick)
-{
-  return parse_number(frame, "\"X1\"", &stick->x1) &&
-         parse_number(frame, "\"Y1\"", &stick->y1) &&
-         parse_number(frame, "\"Z1\"", &stick->z1) &&
-         parse_number(frame, "\"X2\"", &stick->x2) &&
-         parse_number(frame, "\"Y2\"", &stick->y2) &&
-         parse_number(frame, "\"Z2\"", &stick->z2);
-}
-
-static bool schema_is_supported(const char *frame)
-{
-  const char *schema_key = "\"schema_version\"";
-  const char *position = strstr(frame, schema_key);
-  const char *value_start;
-  const char *value_end;
-  size_t value_length;
-
-  if (position == NULL)
-  {
-    return false;
-  }
-  position += strlen(schema_key);
-  while (isspace((unsigned char)*position) != 0)
-  {
-    ++position;
-  }
-  if (*position++ != ':')
-  {
-    return false;
-  }
-  while (isspace((unsigned char)*position) != 0)
-  {
-    ++position;
-  }
-  if (*position++ != '"')
-  {
-    return false;
-  }
-  value_start = position;
-  value_end = strchr(value_start, '"');
-  if (value_end == NULL)
-  {
-    return false;
-  }
-  value_length = (size_t)(value_end - value_start);
-  return (value_length == strlen(STICK_COMMAND_SCHEMA_VERSION)) &&
-         (strncmp(value_start, STICK_COMMAND_SCHEMA_VERSION, value_length) == 0);
-}
-
 bool StickReceiver_ParseJson(const char *frame, StickData *stick)
 {
-  StickData parsed;
+  ControlCommand command;
 
   if ((frame == NULL) || (stick == NULL))
   {
     return false;
   }
-
-  memset(&parsed, 0, sizeof(parsed));
-  if (!schema_is_supported(frame) || !parse_direct_data(frame, &parsed))
+  if (!ControlCommand_ParseJson(frame, &command) ||
+      (command.mode != CONTROL_MODE_MANUAL_ACTION))
   {
     return false;
   }
-
-  parsed.has_command_seq =
-      parse_uint32(frame, "\"command_seq\"", &parsed.command_seq) ? 1U : 0U;
-  parsed.has_command_source_stamp_ms =
-      parse_uint32(frame, "\"command_source_stamp_ms\"",
-                   &parsed.command_source_stamp_ms) ? 1U : 0U;
-
-  if ((parsed.has_command_seq == 0U) ||
-      (parsed.has_command_source_stamp_ms == 0U))
-  {
-    return false;
-  }
-
-  *stick = parsed;
+  memset(stick, 0, sizeof(*stick));
+  stick->x1 = command.axis.swing;
+  stick->x2 = command.axis.bucket;
+  stick->y1 = command.axis.stick;
+  stick->y2 = command.axis.boom;
+  stick->command_seq = command.command_seq;
+  stick->command_source_stamp_ms = command.command_source_stamp_ms;
+  stick->has_command_seq = 1U;
+  stick->has_command_source_stamp_ms = 1U;
   return true;
 }
 

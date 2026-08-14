@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 #include "arm_angle.h"
 #include "collection_timing.h"
+#include "control_command.h"
+#include "control_mode_supervisor.h"
 #include "dwj_reader.h"
 #include "ftepc_rs485.h"
 #include "imu_oled_format.h"
@@ -33,8 +35,10 @@
 #include "pca9685.h"
 #include "stick_receiver.h"
 #include "status_led.h"
+#include "velocity_control.h"
 
 #include <stdio.h>
+#include <string.h>
 
 /* USER CODE END Includes */
 
@@ -73,7 +77,6 @@ typedef enum
 #define OLED_LINE_SIZE 22U
 #define TELEMETRY_BUFFER_SIZE 1024U
 #define DWJ_POLL_PERIOD_MS 50U
-
 #define TELEMETRY_FAULT_RS485 (1UL << 0)
 #define TELEMETRY_FAULT_DWJ (1UL << 1)
 #define TELEMETRY_FAULT_IMU (1UL << 2)
@@ -102,7 +105,12 @@ static uint8_t usart2_dma_rx[USART2_DMA_RX_SIZE];
 static uint8_t imu_dma_rx[IMU_DMA_RX_SIZE];
 static uint16_t imu_dma_last_pos;
 static StickReceiver stick_receiver;
-static StickData latest_stick;
+static ControlCommand latest_control_command;
+static ControlModeSupervisor control_mode_supervisor;
+static VelocityControl velocity_controller;
+static VelocityControlOutput velocity_output;
+static uint8_t velocity_feedback_ready;
+static uint8_t control_command_active;
 static volatile uint8_t usart2_restart_requested;
 static StatusLedTimer status_led_timer;
 static JoystickServoTargets servo_targets;
@@ -168,6 +176,7 @@ static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
 static HAL_StatusTypeDef USART2_StartReceiveToIdle(void);
 static HAL_StatusTypeDef ApplyServoTargets(const JoystickServoTargets *targets);
+static void EnterSafeZero(void);
 static void ProcessReceivedFrames(void);
 static void ServiceControl20Hz(void);
 static void Imu_RxStart(void);
@@ -235,9 +244,19 @@ static HAL_StatusTypeDef ApplyServoTargets(const JoystickServoTargets *targets)
   return HAL_OK;
 }
 
+static void EnterSafeZero(void)
+{
+  ControlModeSupervisor_EnterSafeZero(&control_mode_supervisor);
+  VelocityControl_Reset(&velocity_controller);
+  memset(&velocity_output, 0, sizeof(velocity_output));
+  velocity_feedback_ready = 0U;
+  control_command_active = 0U;
+  control_failsafe_active = 0U;
+}
+
 static uint8_t ControlCommandIsValid(uint32_t now_ms)
 {
-  return ((control_received != 0U) &&
+  return ((control_command_active != 0U) &&
           !JoystickServoMap_IsTimedOut(now_ms, last_valid_control_tick))
              ? 1U
              : 0U;
@@ -246,42 +265,50 @@ static uint8_t ControlCommandIsValid(uint32_t now_ms)
 static void ProcessReceivedFrames(void)
 {
   char frame[STICK_FRAME_MAX_LEN];
-  StickData parsed_stick;
+  ControlCommand parsed_command;
 
   while (StickReceiver_Pop(&stick_receiver, frame, sizeof(frame)))
   {
-    if (StickReceiver_ParseJson(frame, &parsed_stick))
+    if (ControlCommand_ParseJson(frame, &parsed_command))
     {
       uint32_t now_ms = HAL_GetTick();
+      ControlModeDecision decision;
 
-      if (!StickReceiver_IsNewSequence(parsed_stick.command_seq,
+      if (!StickReceiver_IsNewSequence(parsed_command.command_seq,
                                        command_rx_seq,
                                        control_received != 0U))
       {
         invalid_command_frames++;
+        EnterSafeZero();
         continue;
       }
 
-      latest_stick = parsed_stick;
-      if (parsed_stick.has_command_seq != 0U)
+      decision = ControlModeSupervisor_Apply(&control_mode_supervisor,
+                                             &parsed_command);
+      if (!decision.accepted)
       {
-        command_rx_seq = parsed_stick.command_seq;
+        invalid_command_frames++;
+        EnterSafeZero();
+        continue;
       }
-      else
+
+      if (decision.mode_changed)
       {
-        command_rx_seq++;
+        VelocityControl_Reset(&velocity_controller);
+        memset(&velocity_output, 0, sizeof(velocity_output));
       }
-      command_source_stamp_ms =
-          (parsed_stick.has_command_source_stamp_ms != 0U)
-              ? parsed_stick.command_source_stamp_ms
-              : 0U;
+      latest_control_command = parsed_command;
+      command_rx_seq = parsed_command.command_seq;
+      command_source_stamp_ms = parsed_command.command_source_stamp_ms;
       command_received_stamp_ms = now_ms;
       last_valid_control_tick = now_ms;
       control_received = 1U;
+      control_command_active = 1U;
     }
     else
     {
       invalid_command_frames++;
+      EnterSafeZero();
     }
   }
 }
@@ -289,6 +316,7 @@ static void ProcessReceivedFrames(void)
 static void ServiceControl20Hz(void)
 {
   uint32_t now_ms = HAL_GetTick();
+  uint32_t elapsed_ms;
   HAL_StatusTypeDef i2c_status;
   uint8_t command_valid;
 
@@ -297,21 +325,78 @@ static void ServiceControl20Hz(void)
   {
     return;
   }
+  elapsed_ms = (uint32_t)(now_ms - last_control_tick);
   last_control_tick = now_ms;
   control_seq++;
   command_valid = ControlCommandIsValid(now_ms);
+  velocity_feedback_ready = 0U;
 
-  if (command_valid != 0U)
+  if ((command_valid != 0U) &&
+      (control_mode_supervisor.active_mode == CONTROL_MODE_MANUAL_ACTION))
   {
-    JoystickServoMap_Compute(latest_stick.x1, latest_stick.x2,
-                             latest_stick.y1, latest_stick.y2,
-                             latest_stick.z1, latest_stick.z2,
+    JoystickServoMap_Compute(latest_control_command.axis.swing,
+                             latest_control_command.axis.bucket,
+                             latest_control_command.axis.stick,
+                             latest_control_command.axis.boom,
+                             0.0f, 0.0f,
                              &servo_targets);
     i2c_status = ApplyServoTargets(&servo_targets);
     control_failsafe_active = 0U;
   }
+  else if ((command_valid != 0U) &&
+           (control_mode_supervisor.active_mode ==
+            CONTROL_MODE_VELOCITY_REFERENCE) &&
+           (encoder_status == FTEPC485_OK) &&
+           (imu_sample_valid != 0U))
+  {
+    VelocityControlFeedback feedback;
+
+    feedback.boom_length_hundredths_mm =
+        encoder_data.length_hundredths_mm[0];
+    feedback.stick_length_hundredths_mm =
+        encoder_data.length_hundredths_mm[1];
+    feedback.bucket_length_hundredths_mm =
+        encoder_data.length_hundredths_mm[2];
+    feedback.boom_speed_hundredths_mm_s =
+        encoder_data.speed_hundredths_mm_s[0];
+    feedback.stick_speed_hundredths_mm_s =
+        encoder_data.speed_hundredths_mm_s[1];
+    feedback.bucket_speed_hundredths_mm_s =
+        encoder_data.speed_hundredths_mm_s[2];
+    feedback.swing_angle_deg = imu_yaw_deg;
+    feedback.swing_speed_deg_s = imu_yaw_rate_deg_s;
+
+    if (VelocityControl_Update(&velocity_controller,
+                               &latest_control_command.axis,
+                               &feedback,
+                               (float)elapsed_ms / 1000.0f,
+                               &velocity_output))
+    {
+      JoystickServoMap_Compute(velocity_output.valve_action.swing,
+                               velocity_output.valve_action.bucket,
+                               velocity_output.valve_action.stick,
+                               velocity_output.valve_action.boom,
+                               0.0f, 0.0f, &servo_targets);
+      i2c_status = ApplyServoTargets(&servo_targets);
+      velocity_feedback_ready = 1U;
+      control_failsafe_active = 0U;
+    }
+    else
+    {
+      VelocityControl_Reset(&velocity_controller);
+      JoystickServoMap_SetNeutral(&servo_targets);
+      i2c_status = ApplyServoTargets(&servo_targets);
+      control_failsafe_active = 1U;
+    }
+  }
   else if (control_failsafe_active == 0U)
   {
+    if (command_valid == 0U)
+    {
+      ControlModeSupervisor_EnterSafeZero(&control_mode_supervisor);
+    }
+    VelocityControl_Reset(&velocity_controller);
+    memset(&velocity_output, 0, sizeof(velocity_output));
     JoystickServoMap_SetNeutral(&servo_targets);
     i2c_status = ApplyServoTargets(&servo_targets);
     control_failsafe_active = 1U;
@@ -783,6 +868,8 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   }
 
   command_valid = ControlCommandIsValid(now_ms);
+  /* Also marks a fail-closed rejected command so a new serial owner can
+   * distinguish command_rx_seq history from the boot value and resume safely. */
   command_timed_out = ((control_received != 0U) && (command_valid == 0U))
                           ? 1U
                           : 0U;
@@ -798,10 +885,13 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   telemetry->command_age_ms = (control_received != 0U)
                                   ? (now_ms - command_received_stamp_ms)
                                   : 0U;
-  if (command_valid != 0U)
+  if ((command_valid != 0U) &&
+      (control_mode_supervisor.active_mode == CONTROL_MODE_MANUAL_ACTION))
   {
-    ManualAction_FromStick(latest_stick.x1, latest_stick.x2,
-                           latest_stick.y1, latest_stick.y2, &action);
+    ManualAction_FromStick(latest_control_command.axis.swing,
+                           latest_control_command.axis.bucket,
+                           latest_control_command.axis.stick,
+                           latest_control_command.axis.boom, &action);
   }
   else
   {
@@ -833,15 +923,30 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   telemetry->swing_angle_deg = imu_yaw_deg;
   telemetry->swing_vel_degps = imu_yaw_rate_deg_s;
 
-  /* This firmware is manual/open-loop and has no physical velocity PID. */
-  telemetry->boom_v_ref_mmps = 0.0f;
-  telemetry->stick_v_ref_mmps = 0.0f;
-  telemetry->bucket_v_ref_mmps = 0.0f;
-  telemetry->swing_v_ref_degps = 0.0f;
-  telemetry->pid_out_boom = 0.0f;
-  telemetry->pid_out_stick = 0.0f;
-  telemetry->pid_out_bucket = 0.0f;
-  telemetry->pid_out_swing = 0.0f;
+  if ((command_valid != 0U) &&
+      (control_mode_supervisor.active_mode ==
+       CONTROL_MODE_VELOCITY_REFERENCE))
+  {
+    telemetry->boom_v_ref_mmps = -velocity_output.target.boom;
+    telemetry->stick_v_ref_mmps = -velocity_output.target.stick;
+    telemetry->bucket_v_ref_mmps = velocity_output.target.bucket;
+    telemetry->swing_v_ref_degps = velocity_output.target.swing;
+    telemetry->pid_out_boom = velocity_output.valve_action.boom;
+    telemetry->pid_out_stick = velocity_output.valve_action.stick;
+    telemetry->pid_out_bucket = velocity_output.valve_action.bucket;
+    telemetry->pid_out_swing = velocity_output.valve_action.swing;
+  }
+  else
+  {
+    telemetry->boom_v_ref_mmps = 0.0f;
+    telemetry->stick_v_ref_mmps = 0.0f;
+    telemetry->bucket_v_ref_mmps = 0.0f;
+    telemetry->swing_v_ref_degps = 0.0f;
+    telemetry->pid_out_boom = 0.0f;
+    telemetry->pid_out_stick = 0.0f;
+    telemetry->pid_out_bucket = 0.0f;
+    telemetry->pid_out_swing = 0.0f;
+  }
   telemetry->valve_boom_deg = servo_targets.big_arm_deg;
   telemetry->valve_stick_deg = servo_targets.small_arm_deg;
   telemetry->valve_bucket_deg = servo_targets.bucket_deg;
@@ -853,16 +958,38 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   telemetry->pwm_swing = servo_targets.pwm_count[JOYSTICK_CHANNEL_SWING];
   telemetry->pwm_pump = servo_targets.pwm_count[JOYSTICK_CHANNEL_PUMP];
 
-  telemetry->control_mode = (command_valid != 0U)
-                                ? MOTION_CONTROL_MODE_MANUAL
-                                : MOTION_CONTROL_MODE_SAFE_ZERO;
+  if ((command_valid != 0U) &&
+      (control_mode_supervisor.active_mode == CONTROL_MODE_MANUAL_ACTION))
+  {
+    telemetry->control_mode = MOTION_CONTROL_MODE_MANUAL;
+  }
+  else if ((command_valid != 0U) &&
+           (control_mode_supervisor.active_mode ==
+            CONTROL_MODE_VELOCITY_REFERENCE))
+  {
+    telemetry->control_mode = MOTION_CONTROL_MODE_VELOCITY;
+  }
+  else
+  {
+    telemetry->control_mode = MOTION_CONTROL_MODE_SAFE_ZERO;
+  }
   telemetry->homing_complete = 1U;
   telemetry->command_valid = command_valid;
   telemetry->command_timed_out = command_timed_out;
   telemetry->control_enabled =
-      ((command_valid != 0U) && (pca_output_ok != 0U)) ? 1U : 0U;
+      ((command_valid != 0U) && (pca_output_ok != 0U) &&
+       ((control_mode_supervisor.active_mode == CONTROL_MODE_MANUAL_ACTION) ||
+        ((control_mode_supervisor.active_mode ==
+          CONTROL_MODE_VELOCITY_REFERENCE) &&
+         (velocity_feedback_ready != 0U))))
+          ? 1U
+          : 0U;
   telemetry->estop = 0U;
-  telemetry->limit_mask = 0U;
+  telemetry->limit_mask =
+      (control_mode_supervisor.active_mode ==
+       CONTROL_MODE_VELOCITY_REFERENCE)
+          ? velocity_output.limit_mask
+          : 0U;
   telemetry->rs485_ok = (encoder_status == FTEPC485_OK) ? 1U : 0U;
   telemetry->dwj_ok = (dwj_status == HAL_OK) ? 1U : 0U;
   telemetry->imu_ok = (imu_sample_valid != 0U) ? 1U : 0U;
@@ -989,6 +1116,9 @@ int main(void)
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
   StatusLedTimer_Init(&status_led_timer, HAL_GetTick());
   StickReceiver_Init(&stick_receiver);
+  ControlModeSupervisor_Init(&control_mode_supervisor);
+  VelocityControl_Init(&velocity_controller);
+  memset(&velocity_output, 0, sizeof(velocity_output));
   JoystickServoMap_SetNeutral(&servo_targets);
   pca_output_ok = (ApplyServoTargets(&servo_targets) == HAL_OK) ? 1U : 0U;
   control_failsafe_active = 1U;
