@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define SERVO_PULSE_MIN_US 500U
-#define SERVO_PULSE_MID_US 1580U
+#define SERVO_PULSE_MID_US 1500U
 #define SERVO_PULSE_MAX_US 2500U
 #define ESC_PULSE_MIN_US 500U
 #define ESC_PULSE_MID_US 1500U

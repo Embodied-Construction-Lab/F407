@@ -45,6 +45,7 @@
 #define STATUS_TX_BUFFER_SIZE 512U
 #define CONTROL_STATUS_PERIOD_MS 100U
 #define ADC_SAMPLE_PERIOD_MS 20U
+#define ADC_CONVERSION_TIMEOUT_MS 5U
 #define ADC_REFERENCE_MV 3300U
 #define ADC_FULL_SCALE_COUNT 4095U
 #define STEERING_CENTER_MV 1630
@@ -52,7 +53,7 @@
 #define STEERING_MAX_ANGLE_TENTHS 300
 #define TFT_ROW_UPDATE_PERIOD_MS 50U
 #define TFT_LINE_CHARS 30U
-#define TRUCK_FIRMWARE_ID "truck-control-zgt6-tft-2"
+#define TRUCK_FIRMWARE_ID "truck-control-zgt6-tft-3"
 
 /* USER CODE END PD */
 
@@ -102,6 +103,7 @@ static uint32_t last_periodic_status_tick;
 static uint32_t valid_frame_count;
 static uint32_t invalid_frame_count;
 static uint32_t last_adc_sample_tick;
+static uint32_t last_adc_start_tick;
 static uint32_t last_tft_update_tick;
 static volatile uint8_t usart2_restart_requested;
 static volatile uint8_t usart2_tx_busy;
@@ -457,13 +459,26 @@ static void ServiceSteeringFeedback(uint32_t now_ms)
     }
 
     last_adc_sample_tick = now_ms;
+    __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_EOC | ADC_FLAG_OVR);
     ADC1->CR2 |= ADC_CR2_SWSTART;
+    last_adc_start_tick = now_ms;
     adc_conversion_active = 1U;
     return;
   }
 
   if ((ADC1->SR & ADC_SR_EOC) == 0U)
   {
+    if ((uint32_t)(now_ms - last_adc_start_tick) >=
+        ADC_CONVERSION_TIMEOUT_MS)
+    {
+      /* Recover without blocking if a conversion never reaches EOC. */
+      __HAL_ADC_DISABLE(&hadc1);
+      __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_EOC | ADC_FLAG_OVR);
+      __HAL_ADC_ENABLE(&hadc1);
+      adc_conversion_active = 0U;
+      steering_feedback_valid = 0U;
+      last_adc_sample_tick = now_ms;
+    }
     return;
   }
 
@@ -883,6 +898,10 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* HAL_ADC_Init configures ADC1 but does not set CR2.ADON. */
+  __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_EOC | ADC_FLAG_OVR);
+  __HAL_ADC_ENABLE(&hadc1);
 
   /* USER CODE END ADC1_Init 2 */
 

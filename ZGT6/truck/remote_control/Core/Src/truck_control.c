@@ -141,7 +141,7 @@ void TruckControl_MapRawCommand(const TruckCommand *command,
   steering_angle = TRUCK_STEERING_CENTER_DEG +
       TruckControl_ClampSteeringAxis(
           command->steering * TRUCK_STEERING_DIRECTION) *
-      TRUCK_STEERING_MAX_DELTA_DEG;
+        TRUCK_STEERING_MAX_DELTA_DEG;
   throttle = TruckControl_PedalToPercent(command->throttle);
   brake = TruckControl_PedalToPercent(command->brake);
   drive = ((brake > 0.0f) ? -brake : throttle) *

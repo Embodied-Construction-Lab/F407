@@ -8267,7 +8267,7 @@ void TruckControl_MapRawCommand(const TruckCommand *command,
  8003cd2:	ed9f 7a60 	vldr	s14, [pc, #384]	@ 8003e54 <TruckControl_MapRawCommand+0x1bc>
  8003cd6:	ee77 7a87 	vadd.f32	s15, s15, s14
  8003cda:	edc7 7a06 	vstr	s15, [r7, #24]
-      TRUCK_STEERING_MAX_DELTA_DEG;
+        TRUCK_STEERING_MAX_DELTA_DEG;
   throttle = TruckControl_PedalToPercent(command->throttle);
  8003cde:	687b      	ldr	r3, [r7, #4]
  8003ce0:	edd3 7a01 	vldr	s15, [r3, #4]
