@@ -1,7 +1,0 @@
-../Core/Src/homing_controller.c:5:13:clear_sample	16	static
-../Core/Src/homing_controller.c:18:16:absolute_i32	16	static
-../Core/Src/homing_controller.c:23:14:absolute_f	16	static
-../Core/Src/homing_controller.c:28:14:linear_axis_command	32	static
-../Core/Src/homing_controller.c:47:14:yaw_axis_command	24	static
-../Core/Src/homing_controller.c:66:6:HomingController_Init	16	static
-../Core/Src/homing_controller.c:80:24:HomingController_Update	32	static

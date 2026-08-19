@@ -1,2 +1,0 @@
-../Core/Src/motion_telemetry.c:5:5:MotionTelemetry_BuildHeader	24	static
-../Core/Src/motion_telemetry.c:40:5:MotionTelemetry_BuildRow	616	static

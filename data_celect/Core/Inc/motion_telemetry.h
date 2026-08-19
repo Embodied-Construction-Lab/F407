@@ -7,7 +7,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#define MOTION_TELEMETRY_SCHEMA_VERSION "stm32_control_telemetry.v1"
+#define MOTION_TELEMETRY_SCHEMA_VERSION "stm32_control_telemetry.v2"
 
 typedef enum
 {
@@ -26,6 +26,10 @@ typedef struct
   uint32_t command_source_stamp_ms;
   uint32_t command_received_stamp_ms;
   uint32_t command_age_ms;
+  float command_action_boom;
+  float command_action_stick;
+  float command_action_bucket;
+  float command_action_swing;
 
   float boom_pos_mm;
   float stick_pos_mm;

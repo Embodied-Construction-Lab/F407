@@ -194,6 +194,46 @@ static bool parse_direct_data(const char *frame, StickData *stick)
          parse_number(frame, "\"Z2\"", &stick->z2);
 }
 
+static bool schema_is_supported(const char *frame)
+{
+  const char *schema_key = "\"schema_version\"";
+  const char *position = strstr(frame, schema_key);
+  const char *value_start;
+  const char *value_end;
+  size_t value_length;
+
+  if (position == NULL)
+  {
+    return false;
+  }
+  position += strlen(schema_key);
+  while (isspace((unsigned char)*position) != 0)
+  {
+    ++position;
+  }
+  if (*position++ != ':')
+  {
+    return false;
+  }
+  while (isspace((unsigned char)*position) != 0)
+  {
+    ++position;
+  }
+  if (*position++ != '"')
+  {
+    return false;
+  }
+  value_start = position;
+  value_end = strchr(value_start, '"');
+  if (value_end == NULL)
+  {
+    return false;
+  }
+  value_length = (size_t)(value_end - value_start);
+  return (value_length == strlen(STICK_COMMAND_SCHEMA_VERSION)) &&
+         (strncmp(value_start, STICK_COMMAND_SCHEMA_VERSION, value_length) == 0);
+}
+
 bool StickReceiver_ParseJson(const char *frame, StickData *stick)
 {
   StickData parsed;
@@ -204,7 +244,7 @@ bool StickReceiver_ParseJson(const char *frame, StickData *stick)
   }
 
   memset(&parsed, 0, sizeof(parsed));
-  if (!parse_direct_data(frame, &parsed))
+  if (!schema_is_supported(frame) || !parse_direct_data(frame, &parsed))
   {
     return false;
   }
@@ -215,6 +255,19 @@ bool StickReceiver_ParseJson(const char *frame, StickData *stick)
       parse_uint32(frame, "\"command_source_stamp_ms\"",
                    &parsed.command_source_stamp_ms) ? 1U : 0U;
 
+  if ((parsed.has_command_seq == 0U) ||
+      (parsed.has_command_source_stamp_ms == 0U))
+  {
+    return false;
+  }
+
   *stick = parsed;
   return true;
+}
+
+bool StickReceiver_IsNewSequence(uint32_t candidate,
+                                 uint32_t previous,
+                                 bool has_previous)
+{
+  return !has_previous || ((int32_t)(candidate - previous) > 0);
 }

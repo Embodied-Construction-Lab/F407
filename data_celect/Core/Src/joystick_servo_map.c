@@ -23,6 +23,30 @@ static float clamp_axis(float value)
   return (absolute(value) <= JOYSTICK_DEAD_ZONE) ? 0.0f : value;
 }
 
+void ManualAction_SetZero(ManualAction *action)
+{
+  if (action != NULL)
+  {
+    action->boom = 0.0f;
+    action->stick = 0.0f;
+    action->bucket = 0.0f;
+    action->swing = 0.0f;
+  }
+}
+
+void ManualAction_FromStick(float x1, float x2, float y1, float y2,
+                            ManualAction *action)
+{
+  if (action == NULL)
+  {
+    return;
+  }
+  action->boom = clamp_axis(y2);
+  action->stick = clamp_axis(y1);
+  action->bucket = clamp_axis(x2);
+  action->swing = clamp_axis(x1);
+}
+
 static float valve_angle_from_axis(float axis,
                                    float positive_min_deg,
                                    float positive_max_deg,
@@ -90,15 +114,18 @@ void JoystickServoMap_Compute(float x1, float x2, float y1, float y2,
                               float z1, float z2,
                               JoystickServoTargets *targets)
 {
+  ManualAction action;
+
   if (targets == NULL)
   {
     return;
   }
 
-  x1 = clamp_axis(x1 * JOYSTICK_X1_DIRECTION);
-  x2 = clamp_axis(x2 * JOYSTICK_X2_DIRECTION);
-  y1 = clamp_axis(y1 * JOYSTICK_Y1_DIRECTION);
-  y2 = clamp_axis(y2 * JOYSTICK_Y2_DIRECTION);
+  ManualAction_FromStick(x1, x2, y1, y2, &action);
+  x1 = clamp_axis(action.swing * JOYSTICK_X1_DIRECTION);
+  x2 = clamp_axis(action.bucket * JOYSTICK_X2_DIRECTION);
+  y1 = clamp_axis(action.stick * JOYSTICK_Y1_DIRECTION);
+  y2 = clamp_axis(action.boom * JOYSTICK_Y2_DIRECTION);
   z1 = clamp_axis(z1);
   z2 = clamp_axis(z2);
 

@@ -17,6 +17,8 @@ int MotionTelemetry_BuildHeader(char *buffer, uint32_t buffer_size)
       "sensor_seq,sensor_stamp_ms,sensor_is_new,"
       "command_rx_seq,command_source_stamp_ms,"
       "command_received_stamp_ms,command_age_ms,"
+      "command_action_boom,command_action_stick,"
+      "command_action_bucket,command_action_swing,"
       "boom_pos_mm,stick_pos_mm,bucket_pos_mm,"
       "boom_vel_mmps,stick_vel_mmps,bucket_vel_mmps,"
       "boom_angle_deg,arm_angle_deg,bucket_angle_deg,"
@@ -50,6 +52,7 @@ int MotionTelemetry_BuildRow(char *buffer, uint32_t buffer_size,
   written = snprintf(
       buffer, buffer_size,
       "%s,%lu,%lu,%lu,%lu,%u,%lu,%lu,%lu,%lu,"
+      "%.3f,%.3f,%.3f,%.3f,"
       "%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,"
       "%.3f,%.3f,%.3f,%.3f,%.4f,%.4f,%.4f,%.4f,"
       "%.3f,%.3f,%.3f,%.3f,%.3f,"
@@ -65,6 +68,10 @@ int MotionTelemetry_BuildRow(char *buffer, uint32_t buffer_size,
       (unsigned long)t->command_source_stamp_ms,
       (unsigned long)t->command_received_stamp_ms,
       (unsigned long)t->command_age_ms,
+      (double)t->command_action_boom,
+      (double)t->command_action_stick,
+      (double)t->command_action_bucket,
+      (double)t->command_action_swing,
       (double)t->boom_pos_mm,
       (double)t->stick_pos_mm,
       (double)t->bucket_pos_mm,

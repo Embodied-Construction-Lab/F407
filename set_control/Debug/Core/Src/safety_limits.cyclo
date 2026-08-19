@@ -1,5 +1,0 @@
-../Core/Src/safety_limits.c:5:14:limit_linear_axis	6
-../Core/Src/safety_limits.c:28:13:get_linear_axis_profile_feedback	4
-../Core/Src/safety_limits.c:55:7:SafetyLimits_NormalizeYawDeg	3
-../Core/Src/safety_limits.c:68:6:SafetyLimits_Apply	7
-../Core/Src/safety_limits.c:110:6:SafetyLimits_GetJoystickProfileFeedback	9

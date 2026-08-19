@@ -1,4 +1,0 @@
-../Core/Src/pca9685.c:13:26:write_register	32	static
-../Core/Src/pca9685.c:24:26:read_register	40	static
-../Core/Src/pca9685.c:42:19:Pca9685_Init	24	static
-../Core/Src/pca9685.c:96:19:Pca9685_SetPwm	40	static

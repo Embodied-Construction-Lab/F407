@@ -255,9 +255,9 @@ static void ProcessReceivedFrames(void)
     {
       uint32_t now_ms = HAL_GetTick();
 
-      if ((parsed_stick.has_command_seq != 0U) &&
-          (control_received != 0U) &&
-          ((int32_t)(parsed_stick.command_seq - command_rx_seq) <= 0))
+      if (!StickReceiver_IsNewSequence(parsed_stick.command_seq,
+                                       command_rx_seq,
+                                       control_received != 0U))
       {
         invalid_command_frames++;
         continue;
@@ -761,6 +761,7 @@ static void ServiceOled(void)
 
 static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
 {
+  ManualAction action;
   uint8_t command_valid;
   uint8_t command_timed_out;
   uint32_t fault_flags = 0U;
@@ -786,6 +787,19 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   telemetry->command_age_ms = (control_received != 0U)
                                   ? (now_ms - command_received_stamp_ms)
                                   : 0U;
+  if (command_valid != 0U)
+  {
+    ManualAction_FromStick(latest_stick.x1, latest_stick.x2,
+                           latest_stick.y1, latest_stick.y2, &action);
+  }
+  else
+  {
+    ManualAction_SetZero(&action);
+  }
+  telemetry->command_action_boom = action.boom;
+  telemetry->command_action_stick = action.stick;
+  telemetry->command_action_bucket = action.bucket;
+  telemetry->command_action_swing = action.swing;
 
   telemetry->boom_pos_mm =
       (float)encoder_data.length_hundredths_mm[0] / 100.0f;
