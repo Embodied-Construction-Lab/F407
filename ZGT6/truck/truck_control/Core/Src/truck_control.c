@@ -25,13 +25,13 @@ void TruckControl_SetNeutral(TruckOutputs *outputs)
   }
 
   outputs->pwm_count[TRUCK_CHANNEL_STEERING] =
-      ServoControl_AngleToPulse(90.0f);
+      ServoControl_AngleToPulse(TRUCK_STEERING_SERVO_CENTER_DEG);
   outputs->pwm_count[TRUCK_CHANNEL_DRIVE] =
       ServoControl_SpeedToPulse(0.0f);
   outputs->pwm_count[TRUCK_CHANNEL_UNUSED] = 0U;
   outputs->pwm_count[TRUCK_CHANNEL_LIFT] =
       ServoControl_SpeedToPulse(0.0f);
-  outputs->steering_deg = 90;
+  outputs->steering_deg = 0;
   outputs->throttle_percent = 0;
   outputs->brake_percent = 0;
   outputs->drive_percent = 0;

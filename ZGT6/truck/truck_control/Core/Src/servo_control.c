@@ -18,9 +18,21 @@ static float clamp_float(float value, float minimum, float maximum)
 uint16_t ServoControl_AngleToPulse(float angle_deg)
 {
   const float clamped = clamp_float(angle_deg, 0.0f, 180.0f);
-  const float pulse_us = (float)SERVO_PULSE_MIN_US +
-      ((float)(SERVO_PULSE_MAX_US - SERVO_PULSE_MIN_US) *
-       clamped / 180.0f);
+  float pulse_us;
+
+  if (clamped <= 90.0f)
+  {
+    pulse_us = (float)SERVO_PULSE_MIN_US +
+        ((float)(SERVO_PULSE_MID_US - SERVO_PULSE_MIN_US) *
+         clamped / 90.0f);
+  }
+  else
+  {
+    pulse_us = (float)SERVO_PULSE_MID_US +
+        ((float)(SERVO_PULSE_MAX_US - SERVO_PULSE_MID_US) *
+         (clamped - 90.0f) / 90.0f);
+  }
+
   return PwmTiming_DefaultPulseUsToCount((uint16_t)(pulse_us + 0.5f));
 }
 

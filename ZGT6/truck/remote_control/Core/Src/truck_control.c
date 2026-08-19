@@ -68,13 +68,14 @@ void TruckControl_SetNeutral(TruckOutputs *outputs)
   }
 
   outputs->pwm_count[TRUCK_CHANNEL_STEERING] =
-      ServoControl_AngleToPulse(90.0f);
+      ServoControl_AngleToPulse(TRUCK_STEERING_CENTER_DEG);
   outputs->pwm_count[TRUCK_CHANNEL_DRIVE] =
       ServoControl_SpeedToPulse(0.0f);
   outputs->pwm_count[TRUCK_CHANNEL_UNUSED] = 0U;
   outputs->pwm_count[TRUCK_CHANNEL_LIFT] =
       ServoControl_SpeedToPulse(0.0f);
-  outputs->steering_deg = 90;
+  outputs->steering_deg =
+      (int16_t)(TRUCK_STEERING_CENTER_DEG + 0.5f);
   outputs->throttle_percent = 0;
   outputs->brake_percent = 0;
   outputs->drive_percent = 0;
@@ -137,9 +138,10 @@ void TruckControl_MapRawCommand(const TruckCommand *command,
     return;
   }
 
-  steering_angle =
-      (TruckControl_ClampSteeringAxis(
-           command->steering * TRUCK_STEERING_DIRECTION) + 1.0f) * 90.0f;
+  steering_angle = TRUCK_STEERING_CENTER_DEG +
+      TruckControl_ClampSteeringAxis(
+          command->steering * TRUCK_STEERING_DIRECTION) *
+      TRUCK_STEERING_MAX_DELTA_DEG;
   throttle = TruckControl_PedalToPercent(command->throttle);
   brake = TruckControl_PedalToPercent(command->brake);
   drive = ((brake > 0.0f) ? -brake : throttle) *

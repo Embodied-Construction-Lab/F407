@@ -56,7 +56,7 @@
 #define OLED_LINE_SIZE 22U
 #define TFT_ROW_UPDATE_PERIOD_MS 50U
 #define TFT_LINE_CHARS 30U
-#define TRUCK_FIRMWARE_ID "remote-zgt6-tft-1"
+#define TRUCK_FIRMWARE_ID "remote-zgt6-tft-2"
 
 /* USER CODE END PD */
 

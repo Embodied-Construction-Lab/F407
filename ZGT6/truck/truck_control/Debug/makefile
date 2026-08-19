@@ -61,8 +61,8 @@ all: main-build
 main-build: truck_control.elf secondary-outputs
 
 # 工具调用
-truck_control.elf truck_control.map: $(OBJS) $(USER_OBJS) D:\Database\STM32\ZGT6\truck\truck_control\STM32F407ZGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "truck_control.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Database\STM32\ZGT6\truck\truck_control\STM32F407ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="truck_control.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+truck_control.elf truck_control.map: $(OBJS) $(USER_OBJS) D:\Database\STM32\F407\ZGT6\truck\truck_control\STM32F407ZGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "truck_control.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Database\STM32\F407\ZGT6\truck\truck_control\STM32F407ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="truck_control.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo '已结束构建目标： $@'
 	@echo ' '
 
