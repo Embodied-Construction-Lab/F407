@@ -1,0 +1,234 @@
+2026-08-03 15:01:17,913 [INFO] Activator:176 - 
+
+
+2026-08-03 15:01:17,923 [INFO] Activator:177 - !SESSION log4j initialized
+2026-08-03 15:01:18,630 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version11 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,636 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version12 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,641 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version13 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,645 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version14 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,649 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version15 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,654 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version9 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,658 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version10 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,663 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_codegen_inline_jsr_bytecode_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,668 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_pb_assert_as_identifier_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,673 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_pb_enum_as_identifier_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,679 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_cldc11_requires_source13_compliance_se14 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,693 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: CodeAssistConfigurationBlock_matchSubstring_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:01:18,738 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ProblemMarkerManager_problem_marker_update_job_description in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:01:18,743 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FilteredTypesSelectionDialog_default_package in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:01:18,748 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FilteredTypeSelectionDialog_showContainerForDuplicatesAction in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:01:18,751 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_anonym in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:01:18,754 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_concat_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:01:18,758 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_comma_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:01:18,762 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_declseparator_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:01:18,766 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_category_separator_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:01:18,769 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_import_container in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:01:19,116 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_title in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,125 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Find_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,129 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Replace_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,132 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Direction in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,136 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ForwardRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,141 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_BackwardRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,145 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Scope in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,151 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_GlobalRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,156 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_SelectedRangeRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,163 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Options in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,168 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_CaseCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,172 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_WrapCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,176 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_WholeWordCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,180 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_IncrementalCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,183 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_RegExCheckbox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,187 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_FindNextButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,191 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ReplaceFindButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,195 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ReplaceSelectionButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,199 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ReplaceAllButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,204 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_CloseButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,208 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Status_replacements_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,212 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Status_wrapped_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:01:19,492 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FileDocumentProvider_getPersistedEncoding in: org.eclipse.ui.editors.text.TextEditorMessages
+2026-08-03 15:01:23,290 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: TextSearchVisitor_progress_updating_job in: org.eclipse.search.internal.ui.SearchMessages
+2026-08-03 15:01:23,297 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: SearchPageSelectionDialog_rememberLastUsedPage_message in: org.eclipse.search.internal.ui.SearchMessages
+2026-08-03 15:01:26,483 [INFO] LogOutputStream:77 - [STDOUT_REDIRECT] 
+2026-08-03 15:01:28,691 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_label in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:01:28,694 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_dialog_title in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:01:28,696 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_dialog_message in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:01:28,699 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_error_activation_failed in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:01:28,704 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: OrganizeImportsAction_error_message in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:12:49,390 [INFO] Activator:176 - 
+
+
+2026-08-03 15:12:49,394 [INFO] Activator:177 - !SESSION log4j initialized
+2026-08-03 15:12:50,085 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version11 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,091 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version12 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,095 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version13 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,099 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version14 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,103 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version15 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,107 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version9 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,111 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version10 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,116 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_codegen_inline_jsr_bytecode_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,120 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_pb_assert_as_identifier_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,124 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_pb_enum_as_identifier_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,129 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_cldc11_requires_source13_compliance_se14 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,141 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: CodeAssistConfigurationBlock_matchSubstring_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 15:12:50,178 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ProblemMarkerManager_problem_marker_update_job_description in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:12:50,184 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FilteredTypesSelectionDialog_default_package in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:12:50,188 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FilteredTypeSelectionDialog_showContainerForDuplicatesAction in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:12:50,191 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_anonym in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:12:50,194 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_concat_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:12:50,197 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_comma_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:12:50,200 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_declseparator_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:12:50,203 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_category_separator_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:12:50,206 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_import_container in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 15:12:50,545 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_title in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,557 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Find_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,565 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Replace_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,570 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Direction in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,574 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ForwardRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,579 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_BackwardRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,584 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Scope in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,592 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_GlobalRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,598 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_SelectedRangeRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,601 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Options in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,604 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_CaseCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,607 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_WrapCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,610 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_WholeWordCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,613 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_IncrementalCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,616 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_RegExCheckbox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,619 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_FindNextButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,623 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ReplaceFindButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,626 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ReplaceSelectionButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,629 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ReplaceAllButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,633 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_CloseButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,638 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Status_replacements_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,640 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Status_wrapped_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 15:12:50,935 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FileDocumentProvider_getPersistedEncoding in: org.eclipse.ui.editors.text.TextEditorMessages
+2026-08-03 15:12:54,722 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: TextSearchVisitor_progress_updating_job in: org.eclipse.search.internal.ui.SearchMessages
+2026-08-03 15:12:54,726 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: SearchPageSelectionDialog_rememberLastUsedPage_message in: org.eclipse.search.internal.ui.SearchMessages
+2026-08-03 15:12:56,778 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ExecutionEnvironmentDescription_0 in: org.eclipse.jdt.internal.launching.LaunchingMessages
+2026-08-03 15:12:58,201 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_label in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:12:58,204 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_dialog_title in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:12:58,207 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_dialog_message in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:12:58,210 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_error_activation_failed in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:12:58,214 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: OrganizeImportsAction_error_message in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 15:12:58,992 [INFO] LogOutputStream:77 - [STDOUT_REDIRECT] 
+2026-08-03 15:14:47,416 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationDelegate_Cannot in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,421 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationDelegate_Action_None in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,427 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationDelegate_Action_WaitUntilTerminated in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,431 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationDelegate_Action_Delay in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,434 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationDelegate_Action_Delaying in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,438 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_4 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,442 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_5 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,445 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_7 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,448 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_8 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,451 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_10 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,454 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_11 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,457 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_12 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,460 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_13 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,462 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_14 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,464 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationSelectionDialog_15 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,466 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_1 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,467 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_2 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,469 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_3 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,471 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_4 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,472 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_5 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,473 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_6 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,475 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_7 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,477 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_10 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,478 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_11 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,480 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_12 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,481 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_13 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,482 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_14 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,483 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_15 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:47,484 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: MultiLaunchConfigurationTabGroup_16 in: org.eclipse.cdt.launch.internal.ui.LaunchMessages
+2026-08-03 15:14:50,551 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:14:50,551 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:14:50,551 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:14:50,551 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:14:50,551 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:14:52,702 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:14:52,702 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:14:52,702 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:14:52,702 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:14:52,702 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:26:58,835 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:26:58,835 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:26:58,835 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:26:58,835 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:26:58,836 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:27:01,002 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:27:01,002 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:27:01,002 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:27:01,002 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 15:27:01,002 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 17:16:45,231 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 17:16:45,240 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 17:16:45,240 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 17:16:45,241 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 17:16:45,241 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 19:56:44,935 [INFO] Activator:176 - 
+
+
+2026-08-03 19:56:44,939 [INFO] Activator:177 - !SESSION log4j initialized
+2026-08-03 19:56:45,691 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version11 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,698 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version12 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,703 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version13 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,707 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version14 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,711 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version15 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,716 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version9 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,720 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_version10 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,725 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_codegen_inline_jsr_bytecode_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,730 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_pb_assert_as_identifier_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,735 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_pb_enum_as_identifier_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,741 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ComplianceConfigurationBlock_cldc11_requires_source13_compliance_se14 in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,754 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: CodeAssistConfigurationBlock_matchSubstring_label in: org.eclipse.jdt.internal.ui.preferences.PreferencesMessages
+2026-08-03 19:56:45,802 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ProblemMarkerManager_problem_marker_update_job_description in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 19:56:45,807 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FilteredTypesSelectionDialog_default_package in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 19:56:45,813 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FilteredTypeSelectionDialog_showContainerForDuplicatesAction in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 19:56:45,817 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_anonym in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 19:56:45,820 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_concat_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 19:56:45,823 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_comma_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 19:56:45,827 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_declseparator_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 19:56:45,831 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_category_separator_string in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 19:56:45,834 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: JavaElementLabels_import_container in: org.eclipse.jdt.internal.ui.JavaUIMessages
+2026-08-03 19:56:46,226 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_title in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,239 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Find_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,249 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Replace_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,254 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Direction in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,260 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ForwardRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,266 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_BackwardRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,271 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Scope in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,277 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_GlobalRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,283 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_SelectedRangeRadioButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,292 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Options in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,296 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_CaseCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,301 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_WrapCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,306 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_WholeWordCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,319 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_IncrementalCheckBox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,330 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_RegExCheckbox_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,334 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_FindNextButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,339 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ReplaceFindButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,344 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ReplaceSelectionButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,348 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_ReplaceAllButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,352 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_CloseButton_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,357 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Status_replacements_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,360 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FindReplace_Status_wrapped_label in: org.eclipse.ui.texteditor.EditorMessages
+2026-08-03 19:56:46,685 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: FileDocumentProvider_getPersistedEncoding in: org.eclipse.ui.editors.text.TextEditorMessages
+2026-08-03 19:56:50,606 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: TextSearchVisitor_progress_updating_job in: org.eclipse.search.internal.ui.SearchMessages
+2026-08-03 19:56:50,620 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: SearchPageSelectionDialog_rememberLastUsedPage_message in: org.eclipse.search.internal.ui.SearchMessages
+2026-08-03 19:56:54,652 [INFO] LogOutputStream:77 - [STDOUT_REDIRECT] 
+2026-08-03 19:56:56,684 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_label in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 19:56:56,687 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_dialog_title in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 19:56:56,689 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_dialog_message in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 19:56:56,692 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ShowInNavigatorView_error_activation_failed in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 19:56:56,697 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: OrganizeImportsAction_error_message in: org.eclipse.jdt.internal.ui.actions.ActionMessages
+2026-08-03 19:57:42,131 [ERROR] LogOutputStream:75 - [STDERR_REDIRECT] Warning: NLS unused message: ChangeExceptionHandler_dialog_title in: org.eclipse.jdt.internal.ui.refactoring.refactoringui
+2026-08-03 21:34:21,212 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 21:34:21,215 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 21:34:21,215 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 21:34:21,216 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 21:34:21,216 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 21:34:21,342 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 21:34:21,342 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 21:34:21,343 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 21:34:21,343 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake
+2026-08-03 21:34:21,343 [ERROR] AdobePublisher:162 - Exception while opening the connection: javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake

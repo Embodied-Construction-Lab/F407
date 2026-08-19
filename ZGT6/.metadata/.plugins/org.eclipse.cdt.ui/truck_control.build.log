@@ -1,0 +1,10 @@
+13:30:11 **** Incremental Build of configuration Debug for project truck_control ****
+make -j32 all 
+arm-none-eabi-size  truck_control.elf 
+   text	   data	    bss	    dec	    hex	filename
+  49532	    484	   9740	  59756	   e96c	truck_control.elf
+已结束构建： default.size.stdout
+ 
+
+13:30:11 Build Finished. 0 errors, 0 warnings. (took 579ms)
+

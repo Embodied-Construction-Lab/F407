@@ -1,0 +1,10 @@
+13:36:34 **** Incremental Build of configuration Debug for project remote_control ****
+make -j32 all 
+arm-none-eabi-size  remote_control.elf 
+   text	   data	    bss	    dec	    hex	filename
+  46972	    468	   8396	  55836	   da1c	remote_control.elf
+已结束构建： default.size.stdout
+ 
+
+13:36:34 Build Finished. 0 errors, 0 warnings. (took 518ms)
+
