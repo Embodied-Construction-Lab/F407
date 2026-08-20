@@ -13,8 +13,8 @@ int main(void)
   ControlCommand command;
   const char *manual =
       "{\"schema_version\":\"stm32_manual_command.v1\","
-      "\"X1\":-0.8,\"Y1\":0.4,\"Z1\":0,"
-      "\"X2\":0.2,\"Y2\":-0.6,\"Z2\":0,"
+      "\"X1\":-0.8,\"Y1\":0.4,\"Z1\":0.7,"
+      "\"X2\":0.2,\"Y2\":-0.6,\"Z2\":-0.5,"
       "\"command_seq\":40,\"command_source_stamp_ms\":9019}";
   const char *velocity =
       "{\"schema_version\":\"stm32_velocity_command.v1\","
@@ -34,6 +34,8 @@ int main(void)
   assert_float_equal(command.axis.stick, 0.4f);
   assert_float_equal(command.axis.bucket, 0.2f);
   assert_float_equal(command.axis.swing, -0.8f);
+  assert_float_equal(command.manual_z1, 0.7f);
+  assert_float_equal(command.manual_z2, -0.5f);
 
   assert(ControlCommand_ParseJson(velocity, &command));
   assert(command.mode == CONTROL_MODE_VELOCITY_REFERENCE);

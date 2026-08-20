@@ -30,6 +30,8 @@ typedef struct
 {
   ControlMode mode;
   ControlAxisCommand axis;
+  float manual_z1;
+  float manual_z2;
   uint32_t command_seq;
   uint32_t command_source_stamp_ms;
 } ControlCommand;

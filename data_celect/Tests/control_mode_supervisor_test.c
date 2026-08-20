@@ -29,6 +29,13 @@ int main(void)
   assert(supervisor.active_mode == CONTROL_MODE_SAFE_ZERO);
 
   command = command_for(CONTROL_MODE_MANUAL_ACTION, 0.0f);
+  command.manual_z1 = 0.4f;
+  decision = ControlModeSupervisor_Apply(&supervisor, &command);
+  assert(!decision.accepted);
+  assert(decision.force_zero);
+  assert(supervisor.active_mode == CONTROL_MODE_SAFE_ZERO);
+
+  command = command_for(CONTROL_MODE_MANUAL_ACTION, 0.0f);
   decision = ControlModeSupervisor_Apply(&supervisor, &command);
   assert(decision.accepted);
   assert(decision.mode_changed);

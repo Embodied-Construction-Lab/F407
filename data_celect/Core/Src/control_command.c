@@ -159,13 +159,13 @@ static bool parse_manual(const char *frame, ControlCommand *command)
     return false;
   }
 
-  (void)z1;
-  (void)z2;
   command->mode = CONTROL_MODE_MANUAL_ACTION;
   command->axis.boom = y2;
   command->axis.stick = y1;
   command->axis.bucket = x2;
   command->axis.swing = x1;
+  command->manual_z1 = z1;
+  command->manual_z2 = z2;
   return true;
 }
 
@@ -225,7 +225,9 @@ bool ControlCommand_IsZero(const ControlCommand *command)
   }
   if (command->mode == CONTROL_MODE_MANUAL_ACTION)
   {
-    return axes_within(&command->axis, MANUAL_ZERO_DEAD_ZONE);
+    return axes_within(&command->axis, MANUAL_ZERO_DEAD_ZONE) &&
+           (fabsf(command->manual_z1) <= MANUAL_ZERO_DEAD_ZONE) &&
+           (fabsf(command->manual_z2) <= MANUAL_ZERO_DEAD_ZONE);
   }
   if (command->mode == CONTROL_MODE_VELOCITY_REFERENCE)
   {

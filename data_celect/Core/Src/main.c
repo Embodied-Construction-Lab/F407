@@ -338,7 +338,8 @@ static void ServiceControl20Hz(void)
                              latest_control_command.axis.bucket,
                              latest_control_command.axis.stick,
                              latest_control_command.axis.boom,
-                             0.0f, 0.0f,
+                             latest_control_command.manual_z1,
+                             latest_control_command.manual_z2,
                              &servo_targets);
     i2c_status = ApplyServoTargets(&servo_targets);
     control_failsafe_active = 0U;
