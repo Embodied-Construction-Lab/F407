@@ -12,6 +12,7 @@ extern "C" {
 typedef enum
 {
   MOTION_CONTROL_MODE_MANUAL = 1,
+  MOTION_CONTROL_MODE_VELOCITY = 2,
   MOTION_CONTROL_MODE_SAFE_ZERO = 3
 } MotionControlMode;
 

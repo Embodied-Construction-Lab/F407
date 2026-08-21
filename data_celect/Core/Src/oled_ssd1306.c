@@ -350,24 +350,35 @@ HAL_StatusTypeDef OledSsd1306_Update(void)
 
   for (uint8_t page = 0; page < OLED_SSD1306_ROWS; page++)
   {
-    if (OledSsd1306_WriteCommand((uint8_t)(0xB0U + page)) != HAL_OK)
-    {
-      return HAL_ERROR;
-    }
-    if (OledSsd1306_WriteCommand(0x00) != HAL_OK)
-    {
-      return HAL_ERROR;
-    }
-    if (OledSsd1306_WriteCommand(0x10) != HAL_OK)
-    {
-      return HAL_ERROR;
-    }
-    if (OledSsd1306_WriteData(&oled_buffer[page * OLED_SSD1306_WIDTH],
-                              OLED_SSD1306_WIDTH) != HAL_OK)
+    if (OledSsd1306_UpdatePage(page) != HAL_OK)
     {
       return HAL_ERROR;
     }
   }
 
   return HAL_OK;
+}
+
+HAL_StatusTypeDef OledSsd1306_UpdatePage(uint8_t page)
+{
+  if ((oled_i2c == 0) || (oled_address == 0U) ||
+      (page >= OLED_SSD1306_ROWS))
+  {
+    return HAL_ERROR;
+  }
+
+  if (OledSsd1306_WriteCommand((uint8_t)(0xB0U + page)) != HAL_OK)
+  {
+    return HAL_ERROR;
+  }
+  if (OledSsd1306_WriteCommand(0x00) != HAL_OK)
+  {
+    return HAL_ERROR;
+  }
+  if (OledSsd1306_WriteCommand(0x10) != HAL_OK)
+  {
+    return HAL_ERROR;
+  }
+  return OledSsd1306_WriteData(&oled_buffer[page * OLED_SSD1306_WIDTH],
+                               OLED_SSD1306_WIDTH);
 }
