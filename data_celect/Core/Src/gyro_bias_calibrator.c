@@ -8,8 +8,8 @@ static void start_window(GyroBiasCalibrator *calibrator,
                          uint64_t timestamp_ms)
 {
   calibrator->sample_sum_deg_s = raw_rate_deg_s;
-  calibrator->sample_min_deg_s = raw_rate_deg_s;
-  calibrator->sample_max_deg_s = raw_rate_deg_s;
+  calibrator->sample_square_sum_deg_s2 =
+      (double)raw_rate_deg_s * raw_rate_deg_s;
   calibrator->window_start_ms = timestamp_ms;
   calibrator->last_sample_ms = timestamp_ms;
   calibrator->sample_count = 1U;
@@ -23,8 +23,7 @@ void GyroBiasCalibrator_Init(GyroBiasCalibrator *calibrator)
   }
 
   calibrator->sample_sum_deg_s = 0.0;
-  calibrator->sample_min_deg_s = 0.0f;
-  calibrator->sample_max_deg_s = 0.0f;
+  calibrator->sample_square_sum_deg_s2 = 0.0;
   calibrator->bias_deg_s = 0.0f;
   calibrator->window_start_ms = 0U;
   calibrator->last_sample_ms = 0U;
@@ -37,7 +36,8 @@ uint8_t GyroBiasCalibrator_AddSample(GyroBiasCalibrator *calibrator,
                                      uint64_t timestamp_ms)
 {
   uint64_t duration_ms;
-  float sample_range_deg_s;
+  double mean_deg_s;
+  double variance_deg_s2;
 
   if ((calibrator == NULL) || (isfinite(raw_rate_deg_s) == 0))
   {
@@ -69,14 +69,8 @@ uint8_t GyroBiasCalibrator_AddSample(GyroBiasCalibrator *calibrator,
   }
 
   calibrator->sample_sum_deg_s += raw_rate_deg_s;
-  if (raw_rate_deg_s < calibrator->sample_min_deg_s)
-  {
-    calibrator->sample_min_deg_s = raw_rate_deg_s;
-  }
-  if (raw_rate_deg_s > calibrator->sample_max_deg_s)
-  {
-    calibrator->sample_max_deg_s = raw_rate_deg_s;
-  }
+  calibrator->sample_square_sum_deg_s2 +=
+      (double)raw_rate_deg_s * raw_rate_deg_s;
   calibrator->last_sample_ms = timestamp_ms;
   ++calibrator->sample_count;
 
@@ -86,17 +80,26 @@ uint8_t GyroBiasCalibrator_AddSample(GyroBiasCalibrator *calibrator,
     return 1U;
   }
 
-  sample_range_deg_s =
-      calibrator->sample_max_deg_s - calibrator->sample_min_deg_s;
+  mean_deg_s = calibrator->sample_sum_deg_s / calibrator->sample_count;
+  variance_deg_s2 =
+      calibrator->sample_square_sum_deg_s2 / calibrator->sample_count -
+      mean_deg_s * mean_deg_s;
+  if (variance_deg_s2 < 0.0)
+  {
+    variance_deg_s2 = 0.0;
+  }
   if ((calibrator->sample_count < GYRO_BIAS_CALIBRATION_MIN_SAMPLES) ||
-      (sample_range_deg_s > GYRO_BIAS_STATIONARY_MAX_RANGE_DEG_S))
+      (mean_deg_s > GYRO_BIAS_STATIONARY_MAX_MEAN_DEG_S) ||
+      (mean_deg_s < -GYRO_BIAS_STATIONARY_MAX_MEAN_DEG_S) ||
+      (variance_deg_s2 >
+       (double)GYRO_BIAS_STATIONARY_MAX_STDDEV_DEG_S *
+           GYRO_BIAS_STATIONARY_MAX_STDDEV_DEG_S))
   {
     GyroBiasCalibrator_Init(calibrator);
     return 0U;
   }
 
-  calibrator->bias_deg_s =
-      (float)(calibrator->sample_sum_deg_s / calibrator->sample_count);
+  calibrator->bias_deg_s = (float)mean_deg_s;
   calibrator->ready = 1U;
   return 1U;
 }

@@ -54,12 +54,13 @@ bias and subtracts that bias before integrating swing yaw. This corrects the
 common stationary gyro offset without applying a deadband to real rotation.
 
 Calibration is accepted only after at least 50 strictly time-ordered samples
-over three seconds, with absolute rate and sample-range checks. Motion,
-unstable readings or invalid timestamps restart the window. Until calibration
-finishes, telemetry reports `imu_ok=0`, yaw rate remains zero, and RL physical
-velocity control remains unavailable; manual/ACT normalized action behavior is
-unchanged. The estimate is fixed for the current boot and is not adapted while
-the excavator moves.
+over three seconds. A standard-deviation bound tolerates isolated sensor-noise
+spikes, while an absolute mean bound prevents sustained slow rotation from
+being learned as bias. Gross motion, unstable readings or invalid timestamps
+restart the window. Until calibration finishes, telemetry reports `imu_ok=0`,
+yaw rate remains zero, and RL physical velocity control remains unavailable;
+manual/ACT normalized action behavior is unchanged. The estimate is fixed for
+the current boot and is not adapted while the excavator moves.
 
 This removes the measured startup zero bias but cannot eliminate all long-term
 gyro-only yaw drift. Temperature drift and accumulated noise ultimately require

@@ -109,6 +109,46 @@ static void test_stable_increasing_samples_calibrate(void)
                     0.0001f);
 }
 
+static void test_stationary_noise_spikes_do_not_block_calibration(void)
+{
+  GyroBiasCalibrator calibrator;
+  uint64_t timestamp_ms;
+
+  GyroBiasCalibrator_Init(&calibrator);
+  for (timestamp_ms = 1000U; timestamp_ms <= 4050U; timestamp_ms += 50U)
+  {
+    float rate_deg_s = 0.013f;
+    if (timestamp_ms == 1500U)
+    {
+      rate_deg_s = -0.15f;
+    }
+    else if (timestamp_ms == 2500U)
+    {
+      rate_deg_s = 0.16f;
+    }
+    assert(GyroBiasCalibrator_AddSample(&calibrator, rate_deg_s,
+                                        timestamp_ms));
+  }
+
+  assert(GyroBiasCalibrator_IsReady(&calibrator));
+  assert_float_near(GyroBiasCalibrator_BiasDegS(&calibrator), 0.0127f,
+                    0.001f);
+}
+
+static void test_sustained_slow_rotation_is_not_learned_as_bias(void)
+{
+  GyroBiasCalibrator calibrator;
+  uint64_t timestamp_ms;
+
+  GyroBiasCalibrator_Init(&calibrator);
+  for (timestamp_ms = 1000U; timestamp_ms <= 4050U; timestamp_ms += 50U)
+  {
+    (void)GyroBiasCalibrator_AddSample(&calibrator, 0.20f, timestamp_ms);
+  }
+
+  assert(!GyroBiasCalibrator_IsReady(&calibrator));
+}
+
 int main(void)
 {
   test_stationary_bias_is_removed_without_masking_rotation();
@@ -116,5 +156,7 @@ int main(void)
   test_large_motion_and_bad_timestamp_are_rejected();
   test_invalid_inputs_and_unready_outputs_fail_closed();
   test_stable_increasing_samples_calibrate();
+  test_stationary_noise_spikes_do_not_block_calibration();
+  test_sustained_slow_rotation_is_not_learned_as_bias();
   return 0;
 }
