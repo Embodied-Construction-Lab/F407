@@ -27,6 +27,7 @@
 #include "control_mode_supervisor.h"
 #include "dwj_reader.h"
 #include "ftepc_rs485.h"
+#include "gyro_bias_calibrator.h"
 #include "imu_oled_format.h"
 #include "imu_parser.h"
 #include "joystick_servo_map.h"
@@ -127,6 +128,7 @@ static uint8_t pca9685_ready;
 static uint8_t pca_output_ok;
 static ImuParser imu_parser;
 static ImuSample imu_latest;
+static GyroBiasCalibrator imu_gyro_bias;
 static uint8_t imu_sample_valid;
 static float imu_yaw_deg;
 static float imu_yaw_rate_deg_s;
@@ -424,7 +426,19 @@ static void Imu_NormalizeYaw(void)
 
 static void Imu_UpdateYawFromSample(void)
 {
-  imu_yaw_rate_deg_s = imu_latest.gz;
+  if ((GyroBiasCalibrator_AddSample(&imu_gyro_bias, imu_latest.gz,
+                                    imu_latest.ts_ms) == 0U) ||
+      (GyroBiasCalibrator_IsReady(&imu_gyro_bias) == 0U))
+  {
+    imu_sample_valid = 0U;
+    imu_yaw_rate_deg_s = 0.0f;
+    imu_yaw_time_valid = 0U;
+    return;
+  }
+
+  imu_sample_valid = 1U;
+  imu_yaw_rate_deg_s =
+      GyroBiasCalibrator_Correct(&imu_gyro_bias, imu_latest.gz);
 
   if (imu_yaw_time_valid != 0U)
   {
@@ -450,6 +464,7 @@ static void Imu_RxStart(void)
   imu_yaw_time_valid = 0U;
   imu_dma_last_pos = 0U;
   imu_parser_init(&imu_parser);
+  GyroBiasCalibrator_Init(&imu_gyro_bias);
 
   if (HAL_UART_Receive_DMA(&huart1, imu_dma_rx, sizeof(imu_dma_rx)) == HAL_OK)
   {
@@ -467,7 +482,6 @@ static void Imu_FeedBytes(const uint8_t *data, uint16_t length)
 
   if (imu_parser_feed(&imu_parser, data, length, &imu_latest) != 0U)
   {
-    imu_sample_valid = 1U;
     Imu_UpdateYawFromSample();
   }
 }

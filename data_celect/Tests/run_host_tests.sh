@@ -52,6 +52,11 @@ cc "${common[@]}" \
   "${project_root}/Tests/collection_timing_test.c" \
   -o "${build_dir}/collection_timing_test"
 
+cc "${common[@]}" \
+  "${project_root}/Tests/gyro_bias_calibrator_test.c" \
+  "${project_root}/Core/Src/gyro_bias_calibrator.c" \
+  -o "${build_dir}/gyro_bias_calibrator_test"
+
 "${build_dir}/stick_receiver_test"
 "${build_dir}/control_command_test"
 "${build_dir}/control_mode_supervisor_test"
@@ -60,5 +65,6 @@ cc "${common[@]}" \
 "${build_dir}/motion_telemetry_v2_test"
 "${build_dir}/oled_ssd1306_test"
 "${build_dir}/collection_timing_test"
+"${build_dir}/gyro_bias_calibrator_test"
 
 echo "data_celect host tests passed"

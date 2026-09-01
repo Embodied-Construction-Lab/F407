@@ -46,6 +46,25 @@ Telemetry remains the 55-field `stm32_control_telemetry.v2` contract. Its
 - `2`: RL physical velocity reference;
 - `3`: safe zero.
 
+## IMU startup bias calibration
+
+At every STM32 boot, keep the upper structure stationary for at least three
+seconds. The firmware collects a stable gyro-Z window, estimates its zero-rate
+bias and subtracts that bias before integrating swing yaw. This corrects the
+common stationary gyro offset without applying a deadband to real rotation.
+
+Calibration is accepted only after at least 50 strictly time-ordered samples
+over three seconds, with absolute rate and sample-range checks. Motion,
+unstable readings or invalid timestamps restart the window. Until calibration
+finishes, telemetry reports `imu_ok=0`, yaw rate remains zero, and RL physical
+velocity control remains unavailable; manual/ACT normalized action behavior is
+unchanged. The estimate is fixed for the current boot and is not adapted while
+the excavator moves.
+
+This removes the measured startup zero bias but cannot eliminate all long-term
+gyro-only yaw drift. Temperature drift and accumulated noise ultimately require
+an absolute heading reference or sensor fusion rather than a larger deadband.
+
 ## Mode transition
 
 Firmware boots in safe zero. A target mode must first be claimed with a zero
@@ -79,7 +98,7 @@ bash Tests/run_host_tests.sh
 
 This checks both command schemas, zero-only mode transitions, the physical
 velocity sign/unit conversion, PID outputs, manual action mapping, telemetry,
-timing and OLED behavior.
+timing, OLED behavior and IMU gyro-bias calibration.
 
 ## CubeIDE build and flash
 
@@ -91,7 +110,7 @@ generated diff has been reviewed.
 2. Build the Debug configuration.
 3. Confirm zero compiler errors and that the new sources under `Core/Src` are
    compiled (`control_command`, `control_mode_supervisor`, `pid_controller`,
-   `safety_limits`, `velocity_control`).
+   `safety_limits`, `velocity_control`, `gyro_bias_calibrator`).
 4. Flash and verify the programmer reports `Download verified successfully`.
 5. Keep the engine off for the first serial and zero-command soak.
 
