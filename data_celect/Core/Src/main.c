@@ -33,6 +33,7 @@
 #include "motion_telemetry.h"
 #include "oled_ssd1306.h"
 #include "pca9685.h"
+#include "safety_limits.h"
 #include "stick_receiver.h"
 #include "status_led.h"
 #include "velocity_control.h"
@@ -129,6 +130,7 @@ static ImuParser imu_parser;
 static ImuSample imu_latest;
 static uint8_t imu_sample_valid;
 static float imu_yaw_deg;
+static float imu_yaw_unwrapped_deg;
 static float imu_yaw_rate_deg_s;
 static uint64_t imu_last_ts_ms;
 static uint8_t imu_yaw_time_valid;
@@ -334,7 +336,14 @@ static void ServiceControl20Hz(void)
   if ((command_valid != 0U) &&
       (control_mode_supervisor.active_mode == CONTROL_MODE_MANUAL_ACTION))
   {
-    JoystickServoMap_Compute(latest_control_command.axis.swing,
+    float limited_swing = 0.0f;
+
+    if (imu_sample_valid != 0U)
+    {
+      limited_swing = SafetyLimits_LimitSwingCommand(
+          latest_control_command.axis.swing, imu_yaw_unwrapped_deg);
+    }
+    JoystickServoMap_Compute(limited_swing,
                              latest_control_command.axis.bucket,
                              latest_control_command.axis.stick,
                              latest_control_command.axis.boom,
@@ -364,7 +373,7 @@ static void ServiceControl20Hz(void)
         encoder_data.speed_hundredths_mm_s[1];
     feedback.bucket_speed_hundredths_mm_s =
         encoder_data.speed_hundredths_mm_s[2];
-    feedback.swing_angle_deg = imu_yaw_deg;
+    feedback.swing_unwrapped_deg = imu_yaw_unwrapped_deg;
     feedback.swing_speed_deg_s = imu_yaw_rate_deg_s;
 
     if (VelocityControl_Update(&velocity_controller,
@@ -432,7 +441,11 @@ static void Imu_UpdateYawFromSample(void)
 
     if ((imu_latest.ts_ms > imu_last_ts_ms) && (elapsed_ms < 1000U))
     {
-      imu_yaw_deg += imu_yaw_rate_deg_s * ((float)elapsed_ms / 1000.0f);
+      float yaw_delta_deg =
+          imu_yaw_rate_deg_s * ((float)elapsed_ms / 1000.0f);
+
+      imu_yaw_unwrapped_deg += yaw_delta_deg;
+      imu_yaw_deg += yaw_delta_deg;
       Imu_NormalizeYaw();
     }
   }
@@ -445,6 +458,7 @@ static void Imu_RxStart(void)
 {
   imu_sample_valid = 0U;
   imu_yaw_deg = 0.0f;
+  imu_yaw_unwrapped_deg = 0.0f;
   imu_yaw_rate_deg_s = 0.0f;
   imu_last_ts_ms = 0U;
   imu_yaw_time_valid = 0U;

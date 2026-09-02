@@ -32,6 +32,11 @@ cc "${common[@]}" \
   -o "${build_dir}/velocity_control_test"
 
 cc "${common[@]}" \
+  "${project_root}/Tests/safety_limits_test.c" \
+  "${project_root}/Core/Src/safety_limits.c" \
+  -o "${build_dir}/safety_limits_test"
+
+cc "${common[@]}" \
   "${project_root}/Tests/manual_action_test.c" \
   "${project_root}/Core/Src/joystick_servo_map.c" \
   "${project_root}/Core/Src/servo_control.c" \
@@ -56,6 +61,7 @@ cc "${common[@]}" \
 "${build_dir}/control_command_test"
 "${build_dir}/control_mode_supervisor_test"
 "${build_dir}/velocity_control_test"
+"${build_dir}/safety_limits_test"
 "${build_dir}/manual_action_test"
 "${build_dir}/motion_telemetry_v2_test"
 "${build_dir}/oled_ssd1306_test"

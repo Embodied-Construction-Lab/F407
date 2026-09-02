@@ -55,5 +55,16 @@ int main(void)
   assert_float_equal(output.target.boom, 0.0f, 0.0001f);
   assert_float_equal(output.valve_action.boom, 0.0f, 0.0001f);
   assert((output.limit_mask & VELOCITY_LIMIT_BOOM) != 0U);
+
+  VelocityControl_Reset(&controller);
+  memset(&reference, 0, sizeof(reference));
+  feedback.boom_length_hundredths_mm = 12000;
+  feedback.swing_unwrapped_deg = 181.0f;
+  reference.swing = 0.1f;
+  assert(VelocityControl_Update(&controller, &reference, &feedback,
+                                0.05f, &output));
+  assert_float_equal(output.target.swing, 0.0f, 0.0001f);
+  assert_float_equal(output.valve_action.swing, 0.0f, 0.0001f);
+  assert((output.limit_mask & VELOCITY_LIMIT_SWING) != 0U);
   return 0;
 }

@@ -126,7 +126,7 @@ bool VelocityControl_Update(VelocityControl *controller,
       feedback->stick_length_hundredths_mm;
   limits_feedback.bucket_length_hundredths_mm =
       feedback->bucket_length_hundredths_mm;
-  limits_feedback.yaw_deg = feedback->swing_angle_deg;
+  limits_feedback.swing_unwrapped_deg = feedback->swing_unwrapped_deg;
   SafetyLimits_Apply(&limited_target, &limits_feedback);
 
   requested_output.y2 = PidController_Update(

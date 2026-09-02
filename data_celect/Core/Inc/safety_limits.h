@@ -13,8 +13,8 @@ extern "C" {
 #define SAFETY_LIMIT_STICK_MAX_HUNDREDTHS_MM 22000
 #define SAFETY_LIMIT_BUCKET_MIN_HUNDREDTHS_MM 6000
 #define SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM 16000
-#define SAFETY_LIMIT_SWING_MIN_DEG (-110.0f)
-#define SAFETY_LIMIT_SWING_MAX_DEG 110.0f
+#define SAFETY_LIMIT_SWING_MIN_DEG (-180.0f)
+#define SAFETY_LIMIT_SWING_MAX_DEG 180.0f
 
 #define SAFETY_LIMIT_SWING_POSITIVE_INCREASES_YAW 1U
 #define SAFETY_LIMIT_BUCKET_POSITIVE_INCREASES_LENGTH 0U
@@ -34,10 +34,11 @@ typedef struct
   int32_t boom_length_hundredths_mm;
   int32_t stick_length_hundredths_mm;
   int32_t bucket_length_hundredths_mm;
-  float yaw_deg;
+  float swing_unwrapped_deg;
 } SafetyLimitsFeedback;
 
-float SafetyLimits_NormalizeYawDeg(float yaw_deg);
+float SafetyLimits_LimitSwingCommand(float command,
+                                     float unwrapped_yaw_deg);
 void SafetyLimits_Apply(AxisControlSample *sample,
                         const SafetyLimitsFeedback *feedback);
 

@@ -24,7 +24,7 @@ typedef struct
   int32_t boom_speed_hundredths_mm_s;
   int32_t stick_speed_hundredths_mm_s;
   int32_t bucket_speed_hundredths_mm_s;
-  float swing_angle_deg;
+  float swing_unwrapped_deg;
   float swing_speed_deg_s;
 } VelocityControlFeedback;
 
