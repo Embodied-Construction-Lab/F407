@@ -11,15 +11,15 @@ static void assert_float_equal(float actual, float expected)
 
 int main(void)
 {
-  assert_float_equal(SafetyLimits_LimitSwingCommand(0.5f, 179.0f), 0.5f);
-  assert_float_equal(SafetyLimits_LimitSwingCommand(0.5f, 180.0f), 0.0f);
-  assert_float_equal(SafetyLimits_LimitSwingCommand(0.5f, 181.0f), 0.0f);
-  assert_float_equal(SafetyLimits_LimitSwingCommand(-0.5f, 181.0f), -0.5f);
+  assert_float_equal(SafetyLimits_LimitSwingCommand(0.5f, 99.0f), 0.5f);
+  assert_float_equal(SafetyLimits_LimitSwingCommand(0.5f, 100.0f), 0.0f);
+  assert_float_equal(SafetyLimits_LimitSwingCommand(0.5f, 101.0f), 0.0f);
+  assert_float_equal(SafetyLimits_LimitSwingCommand(-0.5f, 101.0f), -0.5f);
 
-  assert_float_equal(SafetyLimits_LimitSwingCommand(-0.5f, -179.0f), -0.5f);
-  assert_float_equal(SafetyLimits_LimitSwingCommand(-0.5f, -180.0f), 0.0f);
-  assert_float_equal(SafetyLimits_LimitSwingCommand(-0.5f, -181.0f), 0.0f);
-  assert_float_equal(SafetyLimits_LimitSwingCommand(0.5f, -181.0f), 0.5f);
+  assert_float_equal(SafetyLimits_LimitSwingCommand(-0.5f, -99.0f), -0.5f);
+  assert_float_equal(SafetyLimits_LimitSwingCommand(-0.5f, -100.0f), 0.0f);
+  assert_float_equal(SafetyLimits_LimitSwingCommand(-0.5f, -101.0f), 0.0f);
+  assert_float_equal(SafetyLimits_LimitSwingCommand(0.5f, -101.0f), 0.5f);
 
   assert_float_equal(SafetyLimits_LimitSwingCommand(0.5f, NAN), 0.0f);
   assert_float_equal(SafetyLimits_LimitSwingCommand(NAN, 0.0f), 0.0f);

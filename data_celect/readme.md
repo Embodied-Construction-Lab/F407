@@ -14,7 +14,7 @@ write boundary.
 
 The swing safety limit is measured from the heading present when the STM32 is
 powered or reset. A separate unwrapped yaw accumulator gates both manual/ACT
-and RL commands at `-180 deg` and `+180 deg`: an outward command is suppressed
+and RL commands at `-100 deg` and `+100 deg`: an outward command is suppressed
 at the boundary while a command back toward zero remains available. The
 existing `[0, 360)` yaw telemetry and OLED display format are unchanged. If the
 IMU is unavailable, manual/ACT swing is suppressed while the three linear axes
@@ -86,7 +86,7 @@ bash Tests/run_host_tests.sh
 ```
 
 This checks both command schemas, zero-only mode transitions, the physical
-velocity sign/unit conversion, PID outputs, the unwrapped `+/-180 deg` swing
+velocity sign/unit conversion, PID outputs, the unwrapped `+/-100 deg` swing
 limit, manual action mapping, telemetry, timing and OLED behavior.
 
 ## CubeIDE build and flash
