@@ -6,7 +6,9 @@
 typedef enum
 {
   HAL_OK = 0,
-  HAL_ERROR = 1
+  HAL_ERROR = 1,
+  HAL_BUSY = 2,
+  HAL_TIMEOUT = 3
 } HAL_StatusTypeDef;
 
 typedef struct
@@ -23,6 +25,9 @@ HAL_StatusTypeDef HAL_I2C_Master_Transmit(I2C_HandleTypeDef *i2c,
                                           uint8_t *data,
                                           uint16_t length,
                                           uint32_t timeout_ms);
+HAL_StatusTypeDef HAL_I2C_Master_Receive(I2C_HandleTypeDef *i2c, uint16_t address,
+    uint8_t *data, uint16_t length, uint32_t timeout_ms);
+uint32_t HAL_GetTick(void);
 void HAL_Delay(uint32_t delay_ms);
 
 #endif

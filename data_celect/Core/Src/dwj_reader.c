@@ -96,6 +96,7 @@ HAL_StatusTypeDef Dwj_StartConversion(I2C_HandleTypeDef *hi2c,
 }
 
 HAL_StatusTypeDef Dwj_ReadConversionRawMv(I2C_HandleTypeDef *hi2c,
+                                          DwjAds1115Channel expected_channel,
                                           int16_t *raw,
                                           int32_t *mv)
 {
@@ -103,10 +104,26 @@ HAL_StatusTypeDef Dwj_ReadConversionRawMv(I2C_HandleTypeDef *hi2c,
   uint8_t rx[2];
   HAL_StatusTypeDef status;
 
-  if ((hi2c == 0) || (raw == 0) || (mv == 0))
+  if ((hi2c == 0) || (raw == 0) || (mv == 0) ||
+      ((unsigned)expected_channel > DWJ_ADS1115_CHANNEL_AIN3))
   {
     return HAL_ERROR;
   }
+
+  /* OS reads as one only after single-shot conversion completes. A previous
+     channel remains in the conversion register while OS is zero. */
+  reg[0] = ADS1115_REG_CONFIG;
+  status = HAL_I2C_Master_Transmit(hi2c, DWJ_ADS1115_I2C_ADDRESS,
+                                  reg, 1U, ADS1115_I2C_TIMEOUT_MS);
+  if (status != HAL_OK) { return HAL_ERROR; }
+  status = HAL_I2C_Master_Receive(hi2c, DWJ_ADS1115_I2C_ADDRESS,
+                                 rx, sizeof(rx), ADS1115_I2C_TIMEOUT_MS);
+  if (status != HAL_OK) { return HAL_ERROR; }
+  if ((rx[0] & 0x70U) != (uint8_t)(0x40U + ((unsigned)expected_channel << 4)))
+  {
+    return HAL_ERROR;
+  }
+  if ((rx[0] & 0x80U) == 0U) { return HAL_BUSY; }
 
   Dwj_BuildReadConversionCommand(reg);
   status = HAL_I2C_Master_Transmit(hi2c,
@@ -116,7 +133,7 @@ HAL_StatusTypeDef Dwj_ReadConversionRawMv(I2C_HandleTypeDef *hi2c,
                                    ADS1115_I2C_TIMEOUT_MS);
   if (status != HAL_OK)
   {
-    return status;
+    return HAL_ERROR;
   }
 
   status = HAL_I2C_Master_Receive(hi2c,
@@ -126,7 +143,7 @@ HAL_StatusTypeDef Dwj_ReadConversionRawMv(I2C_HandleTypeDef *hi2c,
                                   ADS1115_I2C_TIMEOUT_MS);
   if (status != HAL_OK)
   {
-    return status;
+    return HAL_ERROR;
   }
 
   Dwj_DecodeRawMv(rx, raw, mv);
