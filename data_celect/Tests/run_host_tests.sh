@@ -61,4 +61,19 @@ cc "${common[@]}" \
 "${build_dir}/oled_ssd1306_test"
 "${build_dir}/collection_timing_test"
 
+# Exercise the production service body without importing MCU startup/peripherals.
+python3 - "${project_root}/Core/Src/main.c" "${build_dir}/dwj_service_under_test.inc" <<'PYCODE'
+import pathlib
+import sys
+source = pathlib.Path(sys.argv[1]).read_text()
+start = source.index("static void ServiceDwjReader(void)\n{")
+end = source.index("\nstatic void ServiceOled", start)
+pathlib.Path(sys.argv[2]).write_text(source[start:end])
+PYCODE
+cc "${common[@]}" -I"${project_root}/Tests/fakes" -I"${build_dir}" \
+  "${project_root}/Tests/dwj_reader_test.c" \
+  "${project_root}/Core/Src/dwj_reader.c" \
+  -o "${build_dir}/dwj_reader_test"
+"${build_dir}/dwj_reader_test"
+
 echo "data_celect host tests passed"

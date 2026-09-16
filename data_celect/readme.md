@@ -12,6 +12,35 @@ The STM32 does not run RL or ACT. It owns command interpretation, the calibrated
 velocity PID, valve mapping, command timeout, actuator limits and the final PWM
 write boundary.
 
+## 2026-09-09 更新：角度 ADC 转换就绪检查
+
+本次更新修复 ADS1115 切换大臂/铲斗通道后，仅固定等待便读取转换寄存器的时序缺口。
+静止采样曾出现铲斗角度由约 212.6° 短暂跳至 135°，而铲斗缸位移没有对应变化；异常值与
+大臂电压按铲斗标定换算的结果吻合。因此怀疑读取了上一通道的转换结果，现场根因仍待烧录复验。
+
+具体修改：
+
+- 启动转换成功后重新读取系统时钟，避免将 I²C 通信耗时计入转换等待。
+- 读取转换值前检查配置寄存器的 OS 完成位与预期 MUX 通道。
+- 转换尚未完成时继续等待；通道不符、通信失败或等待达到 30 ms 时标记采集异常。
+- 保留现有角度标定、动作协议、PID、PWM 映射和运动安全逻辑。
+
+验证状态：主机测试全部通过，新增测试覆盖未就绪时拒读旧值、通道不符、通信错误、
+启动计时、状态机超时和时钟回绕。尚未完成 ARM 全工程编译、烧录或现场稳定性验收。
+
+另一台电脑更新与烧录：
+
+1. 在 F407 仓库切换到 `change_pwd` 分支，执行 `git pull --ff-only origin change_pwd`。
+2. 在 STM32CubeIDE 打开/刷新本目录的 `data_celect` 工程，执行 Clean 和 Build。
+3. 编译成功后用 ST-Link 烧录本次新生成的固件，不使用历史构建产物。
+4. 保持运动禁用，完成传感器初始化后先做静止采样；确认角度跳变及采集异常情况后再开展运动测试。
+
+主机回归命令（在 F407 仓库根目录执行）：
+
+```bash
+bash data_celect/Tests/run_host_tests.sh
+```
+
 ## Wire contracts
 
 Both commands use USART2 at `460800`, 8N1, newline-delimited ASCII JSON and a

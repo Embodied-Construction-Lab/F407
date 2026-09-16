@@ -12,6 +12,8 @@ extern "C" {
 #define DWJ_ADS1115_I2C_ADDRESS_7BIT 0x48U
 #define DWJ_ADS1115_I2C_ADDRESS (DWJ_ADS1115_I2C_ADDRESS_7BIT << 1)
 #define DWJ_ADS1115_CONVERSION_DELAY_MS 9U
+/* 9 ms nominal wait plus two 10 ms configuration I2C operations. */
+#define DWJ_ADS1115_CONVERSION_TIMEOUT_MS 30U
 
 typedef enum
 {
@@ -42,6 +44,7 @@ int16_t Dwj_VoltageToAngleTenths(int32_t mv,
 HAL_StatusTypeDef Dwj_StartConversion(I2C_HandleTypeDef *hi2c,
                                       DwjAds1115Channel channel);
 HAL_StatusTypeDef Dwj_ReadConversionRawMv(I2C_HandleTypeDef *hi2c,
+                                          DwjAds1115Channel expected_channel,
                                           int16_t *raw,
                                           int32_t *mv);
 HAL_StatusTypeDef Dwj_BuildStartConversionCommand(DwjAds1115Channel channel,
