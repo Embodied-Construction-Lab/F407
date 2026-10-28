@@ -748,6 +748,7 @@ static void ServiceDwjReader(void)
   uint32_t now_ms = HAL_GetTick();
   int16_t raw;
   int32_t mv;
+  HAL_StatusTypeDef read_status;
 
   if (dwj_state == DWJ_IDLE)
   {
@@ -760,7 +761,7 @@ static void ServiceDwjReader(void)
     if (Dwj_StartConversion(&hi2c1, DWJ_ADS1115_CHANNEL_AIN0) == HAL_OK)
     {
       dwj_state = DWJ_WAIT_BIG_ARM;
-      dwj_state_tick = now_ms;
+      dwj_state_tick = HAL_GetTick();
     }
     else
     {
@@ -774,9 +775,25 @@ static void ServiceDwjReader(void)
     return;
   }
 
+  if ((uint32_t)(now_ms - dwj_state_tick) >= DWJ_ADS1115_CONVERSION_TIMEOUT_MS)
+  {
+    dwj_status = HAL_ERROR;
+    dwj_state = DWJ_IDLE;
+    return;
+  }
+
+  read_status = Dwj_ReadConversionRawMv(&hi2c1,
+      dwj_state == DWJ_WAIT_BIG_ARM ? DWJ_ADS1115_CHANNEL_AIN0 : DWJ_ADS1115_CHANNEL_AIN1,
+      &raw, &mv);
+  if ((uint32_t)(HAL_GetTick() - dwj_state_tick) >= DWJ_ADS1115_CONVERSION_TIMEOUT_MS)
+  {
+    read_status = HAL_ERROR;
+  }
+  if (read_status == HAL_BUSY) { return; }
+
   if (dwj_state == DWJ_WAIT_BIG_ARM)
   {
-    if (Dwj_ReadConversionRawMv(&hi2c1, &raw, &mv) != HAL_OK)
+    if (read_status != HAL_OK)
     {
       dwj_state = DWJ_IDLE;
       dwj_status = HAL_ERROR;
@@ -787,7 +804,7 @@ static void ServiceDwjReader(void)
     if (Dwj_StartConversion(&hi2c1, DWJ_ADS1115_CHANNEL_AIN1) == HAL_OK)
     {
       dwj_state = DWJ_WAIT_SMALL_ARM;
-      dwj_state_tick = now_ms;
+      dwj_state_tick = HAL_GetTick();
     }
     else
     {
@@ -799,7 +816,7 @@ static void ServiceDwjReader(void)
 
   if (dwj_state == DWJ_WAIT_SMALL_ARM)
   {
-    if (Dwj_ReadConversionRawMv(&hi2c1, &raw, &mv) == HAL_OK)
+    if (read_status == HAL_OK)
     {
       Dwj_UpdateBucketReading(raw, mv, &dwj_readings.bucket);
       dwj_status = HAL_OK;
