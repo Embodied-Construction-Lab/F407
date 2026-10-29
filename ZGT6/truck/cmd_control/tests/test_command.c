@@ -17,11 +17,11 @@ static void test_bridge_command(void)
   TruckControl_MapCommand(&command, &outputs);
   assert(outputs.steering_deg == 30);
   assert(outputs.throttle_percent == 100);
-  assert(outputs.drive_percent == 20);
+  assert(outputs.drive_percent == 50);
   assert(outputs.lift_percent == 50);
   assert(outputs.pulse_us[TRUCK_CHANNEL_STEERING] == 1833);
   assert(outputs.pulse_us[TRUCK_CHANNEL_LIFT] == 2000);
-  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1700);
+  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 2000);
 }
 
 static void test_optional_and_reverse(void)
@@ -38,10 +38,10 @@ static void test_optional_and_reverse(void)
   TruckControl_MapCommand(&command, &outputs);
   assert(outputs.steering_deg == -30);
   assert(outputs.throttle_percent == -100);
-  assert(outputs.drive_percent == -20);
+  assert(outputs.drive_percent == -50);
   assert(outputs.lift_percent == 0);
   assert(outputs.pulse_us[TRUCK_CHANNEL_STEERING] == 1167);
-  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1300);
+  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1000);
 
   command.brake = 0.01f;
   TruckControl_MapCommand(&command, &outputs);
@@ -59,7 +59,7 @@ static void test_optional_and_reverse(void)
       "{\"steering\":1foo}", &command, &mask));
 }
 
-static void test_fractional_throttle_identity_and_limit(void)
+static void test_fractional_throttle_half_scale(void)
 {
   TruckCommand command;
   TruckOutputs outputs;
@@ -68,20 +68,20 @@ static void test_fractional_throttle_identity_and_limit(void)
   command.throttle = 0.15f;
   TruckControl_MapCommand(&command, &outputs);
   assert(outputs.throttle_percent == 15);
-  assert(outputs.drive_percent == 15);
-  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1650);
+  assert(outputs.drive_percent == 8);
+  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1580);
 
   command.throttle = -0.15f;
   TruckControl_MapCommand(&command, &outputs);
   assert(outputs.throttle_percent == -15);
-  assert(outputs.drive_percent == -15);
-  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1350);
+  assert(outputs.drive_percent == -8);
+  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1420);
 
   command.throttle = 0.25f;
   TruckControl_MapCommand(&command, &outputs);
   assert(outputs.throttle_percent == 25);
-  assert(outputs.drive_percent == 20);
-  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1700);
+  assert(outputs.drive_percent == 13);
+  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1630);
 
   command.brake = 0.1f;
   TruckControl_MapCommand(&command, &outputs);
@@ -112,7 +112,7 @@ int main(void)
 {
   test_bridge_command();
   test_optional_and_reverse();
-  test_fractional_throttle_identity_and_limit();
+  test_fractional_throttle_half_scale();
   test_split_uart_frame();
   return 0;
 }

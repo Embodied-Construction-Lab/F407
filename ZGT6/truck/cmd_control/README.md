@@ -108,9 +108,13 @@ automatically make the existing PID controller use steering feedback or add
 a steering-angle inner loop. It only supplies measured telemetry.
 
 Downlink stays newline-delimited `type:truck_control`, steering in degrees,
-signed throttle [-1,1], brake [0,1]. `TRUCK_DRIVE_MAX_PERCENT` remains 20 as a saturation limit;
-fixed throttle 0.15 maps directly to drive +15% and an expected 1650 us
-TIM1_CH3 pulse. Throttle values above 0.20 remain capped at 20% drive.
+signed throttle [-1,1], brake [0,1]. As in the F407 `truck_control`
+reference, `TRUCK_DRIVE_MAX_PERCENT=50` is a scaling factor: signed throttle
+is converted to percent, then multiplied by 50/100. Thus throttle +0.15
+maps to +8% drive after integer rounding and an expected 1580 us TIM1_CH3
+pulse; throttle -0.15 maps to -8% and 1420 us. Full throttle is limited to
+50% drive and an expected 2000 us pulse. This is a source-level expectation,
+not a measured PWM waveform or vehicle speed.
 Positive brake requests neutral, not active mechanical braking. No change to
 the 300 ms control timeout, ESC reverse sequence, or lift-button overrides.
 
@@ -119,8 +123,7 @@ Core and HAL source folders include the new C files; refresh/rebuild the
 project if an old generated Debug makefile is present. `cmd_control.ioc`
 also records ADC1 and PA1 so regeneration retains the peripheral configuration.
 This source change requires a fresh firmware build and flash. Until the board
-reports `cmd-zgt6-tft-adc-3`, its 0.15 input still uses the old +3% / 1530 us
-mapping. The Jetson test configuration already requires
-`cmd-zgt6-tft-adc-3`, so it rejects the old board firmware until the new
-image is flashed and verified. No board flash is implied by editing these
-sources.
+reports `cmd-zgt6-tft-adc-4`, it is still running an older drive mapping.
+The Jetson test configuration requires `cmd-zgt6-tft-adc-4`, so it rejects
+older board firmware until the new image is flashed and verified. No board
+flash is implied by editing these sources.

@@ -50,7 +50,7 @@
 #define TFT_LINE_CHARS 30U
 #define PWM_MIN_PULSE_US 500U
 #define PWM_MAX_PULSE_US 2500U
-#define TRUCK_FIRMWARE_ID "cmd-zgt6-tft-adc-3"
+#define TRUCK_FIRMWARE_ID "cmd-zgt6-tft-adc-4"
 
 /* USER CODE END PD */
 
