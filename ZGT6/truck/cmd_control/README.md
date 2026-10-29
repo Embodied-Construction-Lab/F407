@@ -38,7 +38,7 @@ PWM channels started. `"i2c":0` indicates that PCA9685 is not used.
 The project-local `bridge.py` converts a forward pedal into positive throttle,
 a reverse pedal into negative throttle, and both pedals into a brake request.
 It defaults omitted reverse and lift-button inputs to released. The current
-firmware limits drive command to +/-20% and lift command to +/-50%; confirm
+firmware caps drive command at +/-20% and lift command to +/-50%; confirm
 that these match the connected ESC and operator controls before enabling the
 drive motor. The configured lift range can reach 1000-2000 us;
 reduce it if the connected actuator requires a narrower range.
@@ -79,7 +79,7 @@ actuator has power or accepts 3.3 V control-high level.
 
 ## Measured steering feedback (2026-10-28)
 
-Firmware ID: `cmd-zgt6-tft-adc-2`. ADC1/PA1 samples nominally every 20 ms;
+Firmware ID after this source change: `cmd-zgt6-tft-adc-3`. ADC1/PA1 samples nominally every 20 ms;
 conversion polling is nonblocking, with a 5 ms conversion timeout. Status is
 sent every 100 ms on the existing USART1, including while waiting for commands.
 No second serial connection or new actuator control loop is introduced.
@@ -108,8 +108,9 @@ automatically make the existing PID controller use steering feedback or add
 a steering-angle inner loop. It only supplies measured telemetry.
 
 Downlink stays newline-delimited `type:truck_control`, steering in degrees,
-signed throttle [-1,1], brake [0,1]. `TRUCK_DRIVE_MAX_PERCENT` remains 20;
-fixed throttle 0.15 maps to drive +3% and an expected 1530 us TIM1_CH3 pulse.
+signed throttle [-1,1], brake [0,1]. `TRUCK_DRIVE_MAX_PERCENT` remains 20 as a saturation limit;
+fixed throttle 0.15 maps directly to drive +15% and an expected 1650 us
+TIM1_CH3 pulse. Throttle values above 0.20 remain capped at 20% drive.
 Positive brake requests neutral, not active mechanical braking. No change to
 the 300 ms control timeout, ESC reverse sequence, or lift-button overrides.
 
@@ -117,4 +118,9 @@ Build includes the copied ST HAL ADC/ADC_EX sources and headers. CubeIDE's
 Core and HAL source folders include the new C files; refresh/rebuild the
 project if an old generated Debug makefile is present. `cmd_control.ioc`
 also records ADC1 and PA1 so regeneration retains the peripheral configuration.
-No firmware was flashed and no vehicle operation was performed by this change.
+This source change requires a fresh firmware build and flash. Until the board
+reports `cmd-zgt6-tft-adc-3`, its 0.15 input still uses the old +3% / 1530 us
+mapping. The Jetson test configuration already requires
+`cmd-zgt6-tft-adc-3`, so it rejects the old board firmware until the new
+image is flashed and verified. No board flash is implied by editing these
+sources.

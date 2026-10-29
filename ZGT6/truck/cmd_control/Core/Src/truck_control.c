@@ -103,8 +103,9 @@ void TruckControl_MapCommand(const TruckCommand *command,
   throttle = TruckControl_Clamp(command->throttle, -1.0f, 1.0f) *
       100.0f;
   brake = TruckControl_Clamp(command->brake, 0.0f, 1.0f) * 100.0f;
-  drive = ((brake > 0.0f) ? 0.0f : throttle) *
-      TRUCK_DRIVE_MAX_PERCENT / 100.0f;
+  drive = (brake > 0.0f) ? 0.0f :
+      TruckControl_Clamp(throttle, -TRUCK_DRIVE_MAX_PERCENT,
+                         TRUCK_DRIVE_MAX_PERCENT);
 
   if ((command->up != 0U) && (command->down == 0U))
   {

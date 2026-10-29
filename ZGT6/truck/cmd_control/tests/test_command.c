@@ -59,6 +59,36 @@ static void test_optional_and_reverse(void)
       "{\"steering\":1foo}", &command, &mask));
 }
 
+static void test_fractional_throttle_identity_and_limit(void)
+{
+  TruckCommand command;
+  TruckOutputs outputs;
+
+  memset(&command, 0, sizeof(command));
+  command.throttle = 0.15f;
+  TruckControl_MapCommand(&command, &outputs);
+  assert(outputs.throttle_percent == 15);
+  assert(outputs.drive_percent == 15);
+  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1650);
+
+  command.throttle = -0.15f;
+  TruckControl_MapCommand(&command, &outputs);
+  assert(outputs.throttle_percent == -15);
+  assert(outputs.drive_percent == -15);
+  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1350);
+
+  command.throttle = 0.25f;
+  TruckControl_MapCommand(&command, &outputs);
+  assert(outputs.throttle_percent == 25);
+  assert(outputs.drive_percent == 20);
+  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1700);
+
+  command.brake = 0.1f;
+  TruckControl_MapCommand(&command, &outputs);
+  assert(outputs.drive_percent == 0);
+  assert(outputs.pulse_us[TRUCK_CHANNEL_DRIVE] == 1500);
+}
+
 static void test_split_uart_frame(void)
 {
   const char *first = "{\"steering\":0,\"throttle\":0";
@@ -82,6 +112,7 @@ int main(void)
 {
   test_bridge_command();
   test_optional_and_reverse();
+  test_fractional_throttle_identity_and_limit();
   test_split_uart_frame();
   return 0;
 }
