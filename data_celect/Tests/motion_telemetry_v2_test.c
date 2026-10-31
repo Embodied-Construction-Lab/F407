@@ -3,6 +3,16 @@
 #include <assert.h>
 #include <string.h>
 
+static unsigned columns(const char *row)
+{
+  unsigned count = 1U;
+  for (; *row != '\0'; ++row)
+  {
+    if (*row == ',') { ++count; }
+  }
+  return count;
+}
+
 int main(void)
 {
   char buffer[1024];
@@ -17,17 +27,23 @@ int main(void)
   telemetry.command_action_bucket = 0.2f;
   telemetry.command_action_swing = -0.8f;
   telemetry.command_valid = 1U;
+  telemetry.estop = 1U;
+  telemetry.fault_flags = MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE;
+  assert(MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE == 0x20U);
 
   header_length = MotionTelemetry_BuildHeader(buffer, sizeof(buffer));
   assert(header_length > 0);
   assert(strncmp(buffer, "schema_version,control_seq", 26U) == 0);
   assert(strstr(buffer, "command_action_boom,command_action_stick,") != 0);
   assert(strstr(buffer, "command_action_bucket,command_action_swing,") != 0);
+  assert(columns(buffer) == 55U);
 
   row_length = MotionTelemetry_BuildRow(buffer, sizeof(buffer), &telemetry);
   assert(row_length > 0);
-  assert(strncmp(buffer, "stm32_control_telemetry.v2,7,", 29U) == 0);
+  assert(strncmp(buffer, "stm32_control_telemetry.v3,7,", 29U) == 0);
   assert(strstr(buffer, ",-0.600,0.400,0.200,-0.800,") != 0);
+  assert(strstr(buffer, ",0,1,0,0,0,0,32,0\n") != 0);
+  assert(columns(buffer) == 55U);
   assert(row_length < (int)sizeof(buffer));
   /* 8N1 costs 10 bits/byte. Even a full 1023-byte row at 20 Hz uses
      204600 bit/s, below the fixed USART2 rate of 460800 bit/s. */

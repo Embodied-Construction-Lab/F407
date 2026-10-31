@@ -17,15 +17,19 @@ int main(void)
       "\"X2\":0.2,\"Y2\":-0.6,\"Z2\":-0.5,"
       "\"command_seq\":40,\"command_source_stamp_ms\":9019}";
   const char *velocity =
-      "{\"schema_version\":\"stm32_velocity_command.v1\","
+      "{\"schema_version\":\"stm32_velocity_command.v2\","
       "\"boom_mps\":0.12,\"stick_mps\":-0.08,"
       "\"bucket_mps\":0.04,\"swing_radps\":-0.15,"
       "\"command_seq\":41,\"command_source_stamp_ms\":9021}";
   const char *corrupt_velocity =
-      "{\"schema_version\":\"stm32_velocity_command.v1\","
+      "{\"schema_version\":\"stm32_velocity_command.v2\","
       "\"boom_mps\":0.12oops,\"stick_mps\":0,"
       "\"bucket_mps\":0,\"swing_radps\":0,"
       "\"command_seq\":42,\"command_source_stamp_ms\":9022}";
+  const char *legacy_velocity =
+      "{\"schema_version\":\"stm32_velocity_command.v1\","
+      "\"boom_mps\":0.01,\"stick_mps\":0,\"bucket_mps\":0,\"swing_radps\":0,"
+      "\"command_seq\":43,\"command_source_stamp_ms\":9023}";
 
   assert(ControlCommand_ParseJson(manual, &command));
   assert(command.mode == CONTROL_MODE_MANUAL_ACTION);
@@ -46,5 +50,7 @@ int main(void)
   assert_float_equal(command.axis.bucket, 0.04f);
   assert_float_equal(command.axis.swing, -0.15f);
   assert(!ControlCommand_ParseJson(corrupt_velocity, &command));
+  /* v1 used the opposite cylinder convention: never silently reinterpret it. */
+  assert(!ControlCommand_ParseJson(legacy_velocity, &command));
   return 0;
 }

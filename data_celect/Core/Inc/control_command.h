@@ -9,7 +9,8 @@ extern "C" {
 #include <stdint.h>
 
 #define CONTROL_MANUAL_SCHEMA_VERSION "stm32_manual_command.v1"
-#define CONTROL_VELOCITY_SCHEMA_VERSION "stm32_velocity_command.v1"
+/* v2: cylinder extension is positive; legacy v1 must be rejected. */
+#define CONTROL_VELOCITY_SCHEMA_VERSION "stm32_velocity_command.v2"
 
 typedef enum
 {

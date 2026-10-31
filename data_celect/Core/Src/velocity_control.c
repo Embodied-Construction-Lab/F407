@@ -64,10 +64,11 @@ static AxisControlSample target_from_physical(
 {
   AxisControlSample target;
 
-  /* Preserve actor_spc's calibrated physical-to-valve sign contract. */
-  target.y2 = -reference->boom * METRES_TO_MILLIMETRES;
-  target.y1 = -reference->stick * METRES_TO_MILLIMETRES;
-  target.x2 = reference->bucket * METRES_TO_MILLIMETRES;
+  /* v2 cylinders: extension-positive m/s -> calibrated valve-direction mm/s.
+     PID feedback, asymmetric feedforward and limits keep their valve signs. */
+  target.y2 = reference->boom * METRES_TO_MILLIMETRES;
+  target.y1 = reference->stick * METRES_TO_MILLIMETRES;
+  target.x2 = -reference->bucket * METRES_TO_MILLIMETRES;
   target.x1 = clamp_swing_reference(reference->swing) * RADIANS_TO_DEGREES;
   return target;
 }
