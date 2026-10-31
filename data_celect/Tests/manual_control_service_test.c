@@ -18,32 +18,6 @@ typedef struct { uint32_t unused; } UART_HandleTypeDef;
 typedef struct { uint32_t unused; } GPIO_TypeDef;
 #include "ftepc_rs485.h"
 
-#ifndef TEST_BOARD_ESTOP_UNAVAILABLE
-#define TEST_BOARD_ESTOP_UNAVAILABLE 0
-#endif
-#ifndef TEST_EXTERNAL_POWER_CUTOFF
-#define TEST_EXTERNAL_POWER_CUTOFF 0
-#endif
-
-typedef enum { GPIO_PIN_RESET, GPIO_PIN_SET } GPIO_PinState;
-static GPIO_TypeDef test_estop_port;
-static GPIO_PinState test_estop_level;
-#if TEST_EXTERNAL_POWER_CUTOFF
-#define BOARD_EXTERNAL_POWER_CUTOFF_ENABLED 1
-#elif !TEST_BOARD_ESTOP_UNAVAILABLE
-#define BOARD_ESTOP_INPUT_ENABLED 1
-#define BOARD_ESTOP_GPIO_PORT (&test_estop_port)
-#define BOARD_ESTOP_GPIO_PIN 1U
-#define BOARD_ESTOP_ACTIVE_STATE GPIO_PIN_RESET
-#endif
-#include "board_safety.h"
-
-GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *port, uint16_t pin)
-{
-  assert(port == &test_estop_port && pin == 1U);
-  return test_estop_level;
-}
-
 static uint32_t tick, last_control_tick, control_seq, last_valid_control_tick;
 static uint8_t control_command_active, velocity_feedback_ready;
 static uint8_t control_failsafe_active, pca_output_ok, imu_sample_valid;
@@ -79,7 +53,6 @@ static HAL_StatusTypeDef ApplyServoTargets(const JoystickServoTargets *targets)
 static void start_manual(void)
 {
   memset(&latest_control_command, 0, sizeof(latest_control_command));
-  test_estop_level = GPIO_PIN_SET;
   StickReceiver_Init(&stick_receiver);
   control_received = 1U;
   command_rx_seq = 1U;
@@ -234,9 +207,9 @@ static void receive_velocity(float boom, uint32_t seq)
   ProcessReceivedFrames();
 }
 
-static void test_external_power_cutoff(void)
+static void test_command_lifecycle(void)
 {
-  /* External power removal is not simulated as a GPIO measurement. */
+  /* Both command modes require a fresh neutral handover. */
   for (unsigned mode = 0; mode < 2; ++mode)
   {
     MotionTelemetry telemetry;
@@ -251,10 +224,7 @@ static void test_external_power_cutoff(void)
     FillMotionTelemetry(&telemetry, tick);
     assert_neutral();
     assert(telemetry.control_enabled == 0U);
-    assert(telemetry.estop == 0U); /* No live feedback: availability stays false. */
-    assert(ReadBoardSafetyInput().available == 0U);
-    assert((telemetry.fault_flags & MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE) != 0U);
-    assert((telemetry.fault_flags & MOTION_TELEMETRY_FLAG_EXTERNAL_POWER_CUTOFF) != 0U);
+    assert(telemetry.estop == 0U); /* Reserved wire field. */
 
     /* Startup cannot accept a nonzero command until the explicit zero handover. */
     receive(demand, 1U);
@@ -269,7 +239,7 @@ static void test_external_power_cutoff(void)
     ServiceControl20Hz();
     assert(applied_targets.pump_percent != 0.0f);
 
-    /* Keeping the architecture enabled never disables the command watchdog. */
+    /* A missed command deadline returns both modes to neutral. */
     tick = last_valid_control_tick + JOYSTICK_CONTROL_TIMEOUT_MS + 1U;
     ServiceControl20Hz();
     FillMotionTelemetry(&telemetry, tick);
@@ -292,23 +262,6 @@ static void test_external_power_cutoff(void)
 
 int main(void)
 {
-  if (TEST_BOARD_ESTOP_UNAVAILABLE && !TEST_EXTERNAL_POWER_CUTOFF)
-  {
-    start_manual();
-    latest_control_command.axis.boom = 0.6f;
-    ServiceControl20Hz();
-    assert_neutral();
-    assert(control_command_active == 0U);
-    assert(control_mode_supervisor.active_mode == CONTROL_MODE_SAFE_ZERO);
-    MotionTelemetry telemetry;
-    FillMotionTelemetry(&telemetry, tick);
-    assert(telemetry.estop == 1U && telemetry.control_enabled == 0U);
-    assert((telemetry.fault_flags &
-            MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE) != 0U);
-    puts("unavailable board estop tests passed");
-    return 0;
-  }
-
   test_velocity_telemetry();
 
   /* At both endpoints, block only the outward direction and allow retreat. */
@@ -390,83 +343,7 @@ int main(void)
   assert_neutral();
   assert(control_failsafe_active == 1U);
 
-  if (TEST_EXTERNAL_POWER_CUTOFF)
-  {
-    test_external_power_cutoff();
-    puts("external power cutoff service tests passed");
-    return 0;
-  }
-
-  /* Packets received while estop is held cannot arm a post-clear restart. */
-  start_manual();
-  latest_control_command.axis.boom = 0.6f;
-  ServiceControl20Hz();
-  test_estop_level = GPIO_PIN_RESET;
-  tick += COLLECTION_CONTROL_PERIOD_MS;
-  ServiceControl20Hz();
-  tick += 1U;
-  receive_manual(0.0f, 2U);
-  receive_manual(0.6f, 3U);
-  ServiceControl20Hz(); /* The next 50 ms output cycle is not due yet. */
-  test_estop_level = GPIO_PIN_SET;
-  tick = last_control_tick + COLLECTION_CONTROL_PERIOD_MS;
-  ServiceControl20Hz();
-  assert_neutral();
-  assert(control_command_active == 0U);
-
-  /* A real board-input edge stops both modes and clears the active command. */
-  for (unsigned velocity_mode = 0; velocity_mode < 2; ++velocity_mode)
-  {
-    MotionTelemetry telemetry;
-    start_manual();
-    if (velocity_mode)
-    {
-      control_mode_supervisor.active_mode = CONTROL_MODE_VELOCITY_REFERENCE;
-      latest_control_command.mode = CONTROL_MODE_VELOCITY_REFERENCE;
-      latest_control_command.axis.boom = -0.01f;
-    }
-    else
-    {
-      latest_control_command.axis.boom = 0.6f;
-      latest_control_command.manual_z1 = 0.4f;
-    }
-    ServiceControl20Hz();
-    assert(applied_targets.pump_percent != 0.0f);
-    test_estop_level = GPIO_PIN_RESET;
-    tick += COLLECTION_CONTROL_PERIOD_MS;
-    ServiceControl20Hz();
-    assert_neutral();
-    assert(control_command_active == 0U);
-    assert(control_mode_supervisor.active_mode == CONTROL_MODE_SAFE_ZERO);
-    assert(velocity_feedback_ready == 0U);
-    FillMotionTelemetry(&telemetry, tick);
-    assert(telemetry.estop == 1U && telemetry.control_enabled == 0U);
-    assert((telemetry.fault_flags &
-            MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE) == 0U);
-
-    /* Clearing estop alone cannot resurrect the command or its mode. */
-    test_estop_level = GPIO_PIN_SET;
-    tick += COLLECTION_CONTROL_PERIOD_MS;
-    ServiceControl20Hz();
-    assert_neutral();
-    assert(control_command_active == 0U);
-    FillMotionTelemetry(&telemetry, tick);
-    assert(telemetry.estop == 0U && telemetry.control_enabled == 0U);
-
-    /* A new nonzero frame cannot reclaim a stopped mode. A zero frame can. */
-    receive_manual(0.6f, 2U);
-    assert(control_command_active == 0U);
-    receive_manual(0.0f, 2U);
-    tick += COLLECTION_CONTROL_PERIOD_MS;
-    ServiceControl20Hz();
-    assert_neutral();
-    FillMotionTelemetry(&telemetry, tick);
-    assert(telemetry.estop == 0U && telemetry.control_enabled == 1U);
-    receive_manual(0.6f, 3U);
-    tick += COLLECTION_CONTROL_PERIOD_MS;
-    ServiceControl20Hz();
-    assert(applied_targets.pump_percent != 0.0f);
-  }
+  test_command_lifecycle();
   puts("manual control service tests passed");
   return 0;
 }

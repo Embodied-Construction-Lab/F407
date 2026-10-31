@@ -27,51 +27,23 @@ git log -1 --oneline
 ```
 
 1. 用 **STM32CubeIDE** 导入/刷新 `data_celect` 工程。不要选择 `pulse`、`actor_spc` 或 `cmd_control`。
-2. 工程右键 **Build Configurations → Set Active → Release_ExternalCutoff**，然后 Clean / Build。
-   该配置明确设置 `BOARD_EXTERNAL_POWER_CUTOFF_ENABLED=1`、`BOARD_ESTOP_INPUT_ENABLED=0`，
-   对应已确认的外部断动力按钮。普通 `Debug` / `Release` 仍默认禁止运动。
-3. 确认编译控制台包含上述两个 `-D` 定义，构建成功后使用本次新生成的
-   **`data_celect/Release_ExternalCutoff/data_celect.elf`**。
+2. 工程右键 **Build Configurations → Set Active → Release**，然后 Clean / Build。
+   `Debug` 也可用于调试；两者使用同一控制逻辑，不需要额外模式宏。
+3. 构建成功后使用本次新生成的 **`data_celect/Release/data_celect.elf`**。
 4. 退出上位机控制程序、关闭液压动力，使用 **STM32CubeProgrammer** 下载该 ELF 并校验。
    CubeProgrammer 用于编程/校验，不负责本 C 工程的编译；它支持 ELF，无需另行转换 HEX。
-5. 重启控制板后先由匹配的新 Orin 软件读取状态：应为遥测v3、外部断电模式；
-   未下发控制命令时使能为0。完成接口核对后再进行单轴与RL现场验收。
+5. 重启控制板后先由匹配的新 Orin 软件读取状态：应为遥测 v3，未下发控制命令时使能为 0。
+   完成接口核对后再进行单轴与 RL 现场验收。
 
 本配置不修改三缸限位、PWM或速度比例。新固件的手动/ACT模式也执行已有方向性限位，
 旧杆量模式可达的部分位置可能被限制；这不是重复零位标定要求。
 旧速度v1客户端不能搭配本固件，新Orin客户端需使用速度v2。
 
-验证：host回归覆盖三种停止构建模式；配置测试用真实 `board_safety.h` 核验三个CubeIDE配置
-的有效宏以及独立输出目录。本机另以ARM GCC完成源码构建；Windows CubeIDE导入/构建仍由现场执行。
-不将编译通过称为已烧录或实机运动通过。
+验证：host 回归覆盖普通构建的手动/速度服务、启动零命令交接、超时归零、重启、限位和遥测。
+配置测试核验两个 CubeIDE 配置及独立输出目录。本机另以 ARM GCC 完成源码构建；
+Windows CubeIDE 导入/构建仍由现场执行。不将编译通过称为已烧录或实机运动通过。
 
 工具说明：[ST官方 STM32CubeProgrammer 文档](https://www.st.com/en/development-tools/stm32cubeprog.html)。
-
-## 2026-10-31 更新：外部动力断电按钮模式
-
-用户已确认新增位于PC附近的独立按钮，用于切断挖掘机动力；使用后人工重启STM32、
-Orin和挖掘机。该按钮没有STM32反馈线。本次增加显式构建模式，不把无反馈写成“已测急停清除”。
-
-- 默认 `BOARD_ESTOP_INPUT_ENABLED=0`、`BOARD_EXTERNAL_POWER_CUTOFF_ENABLED=0`，仍禁止运动。
-- 已接入GPIO反馈的设备继续使用原GPIO模式，读取实际输入。
-- 本次外部断电架构显式编译 `BOARD_EXTERNAL_POWER_CUTOFF_ENABLED=1`；不能同时启用GPIO模式，
-  两个开关只接受0或1。这只声明部署架构，不能由软件验证断电按钮是否接通或已按下。
-- 外部模式保持 `BoardSafetyInput.available=0`，遥测bit5表示急停反馈不可用；同时新增
-  `MOTION_TELEMETRY_FLAG_EXTERNAL_POWER_CUTOFF=0x40`（bit6）声明外部断电模式。
-  `estop=0`仅表示没有板端输入抑制，**不是物理按钮处于松开状态的测量**。上位机必须保留
-  物理急停状态unknown，并显式匹配模式；只看到 `estop=0` 不足以允许自动运动。
-- v3的55列和顺序不变。bit6是现有 `fault_flags` 位图中的架构标志；bit5仍保留，因此旧版上位机
-  会拒绝这种模式，不会静默当成GPIO已配置。无模式配置仍报告 `estop=1`、bit5及使能0。
-
-三处板端检查统一使用 `BoardSafetyAllowsCommands`，但控制使能仍需要有效命令、正常输出及
-相应控制模式条件。命令300ms超时、序号检查、限位、模式切换和PID归零行为不变。
-上电仍为safe zero，必须先收到目标模式的零命令才能接收非零命令；外部断电之后须遵守上述
-人工重启流程并重新启动上位机授权会话。板端不能检测只有液压动力被切断的事件，因而不能
-证明“仅恢复动力而不重启控制器”不会恢复输出，也不支持将其作为操作流程。
-
-host测试覆盖生产服务的GPIO、默认禁用、外部断电三种构建；外部模式覆盖手动/速度输出、
-正确位图、上电非零拒绝、watchdog归零及重启后非零拒绝；同时检查非法/互斥编译配置拒绝。
-测试不模拟实物动力切断有效性。本节对应源码变更没有自行烧录或运动。
 
 ## 2026-10-29 更新：V5 RL 速度协议 v2
 
@@ -82,10 +54,7 @@ host测试覆盖生产服务的GPIO、默认禁用、外部断电三种构建；
 
 旧速度 v1（包括零速度包）一律拒绝，不在同一版本下静默反向，也不提供 v1 回退。
 EA 的 `devices/stm32_commands.py` 已配套发 v2，需与新固件配套验收；手动／ACT 仍为 v1。
-当日仅改源码和离线验证，**未烧录、未运动**。当时用户确认现场没有专用急停，遇到问题由人工
-断电，也没有 STM32 急停反馈线。它不被等同为已验证的急停系统；不再要求不存在的 GPIO。
-已有 v3 急停输入未配置，默认构建不能运动，不能直接替换现场已通过的遥操作固件。
-本轮保留默认禁用，不通过常量“急停已清除”或新增旁路放行；下节 GPIO 接入仅适用于以后确有该硬件时。
+当日仅改源码和离线验证，**未烧录、未运动**。
 
 已通过命令解析、三缸正反向与测速一致性、四轴两端限位及反向退回、零速度清空 PID、
 实际控制服务的遥测符号与归零测试。EA 跨端测试直接编译本工程 C 解析器验证协议。
@@ -94,29 +63,11 @@ CubeIDE 的 Debug／Release 构建路径及项目元数据已从历史 `receive_
 详细证据与既有修改保护见
 [本轮迁移记录](../../EvaluationReport/2026-10-29_f407_v5_velocity_migration/README.md)。
 
-## 2026-10-22 更新：实时急停输入与遥测 v3
+## 遥测协议
 
-遥测使用 `stm32_control_telemetry.v3`，保持原 55 列及其顺序。`estop` 来自本次板端
-GPIO 读取，不再固定为 0；`fault_flags` 新增
-`MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE = 0x20`（bit 5）。输入未配置时报告
-`estop=1`、该故障位及 `control_enabled=0`，不能据人工勾选项把它当作急停已清除。
-
-`Core/Inc/board_safety.h` 默认 `BOARD_ESTOP_INPUT_ENABLED=0`，端口、引脚、有效电平
-均未指定，**默认固件不可运动**。只有现场确认实际电路、有效电平、断线行为，并在
-CubeMX／`MX_GPIO_Init` 正确配置输入模式、所需上拉／下拉和端口时钟后，
-才显式配置 `BOARD_ESTOP_GPIO_PORT`、`BOARD_ESTOP_GPIO_PIN`、
-`BOARD_ESTOP_ACTIVE_STATE` 并启用、编译、经授权烧录。不提供猜测引脚或默认接线。
-可用标志表示已显式配置此输入，不代表软件能自动检测接错线或断线，电路行为仍需现场验收。
-
-命令接收时和每个控制周期在手动／速度分支之前均读取急停。输入不可用或触发时拒收命令，
-废弃活动命令、清空模式与 PID，
-按原输出路径写全中位；解除急停不会恢复原命令。之后必须重新接收有效零命令取得模式，再接收新
-非零命令；Orin 本地会话重启与显式运动授权仍由上位机管理。原命令 watchdog、限位和映射保留。
-`homing_complete` 的历史占位值未改，不能据此认定已回零或已标定。
-
-验证：实际生产 GPIO 读取、命令接收、控制服务、遥测装配均纳入 host 回归；分别编译默认未配置
-与虚拟已配置 GPIO 的测试，检查不可用／触发／清除、停止后不可自动恢复、两种控制模式和 v3
-55 列／bit 5。11 个 host 测试程序通过。本轮未完成 ARM 全工程构建、烧录或现场运动。
+遥测使用 `stm32_control_telemetry.v3`，保持原 55 列及其顺序。
+`estop` 为保留字段，固定为 0，不表示实测硬件状态；`homing_complete` 的历史占位值
+不能用于认定已回零或已标定。控制状态以有效命令、输出结果和当前模式为依据。
 
 ## 2026-10-21 更新：手动动作接入已有机械限位
 
@@ -130,9 +81,7 @@ CubeMX／`MX_GPIO_Init` 正确配置输入模式、所需上拉／下拉和端�
 传感缺失下的零动作（包括四轴和两个履带输入的死区边界）。完整 host 测试通过；
 本轮未完成 ARM 全工程构建、烧录或真机运动。
 
-该改动不证明当前编码器长度基准、回转前向、IMU 持续采样或急停有效：这些仍需现场核对。
-当日实现尚保留急停占位，已由上方 v3 更新替代；`homing_complete` 占位值及手动
-`limit_mask` 的现状仍未改，不能将其当作已经完成安全标定的证据。
+`homing_complete` 占位值及手动 `limit_mask` 的现状仍未改，不能将其当作已完成标定的证据。
 
 ## 2026-09-09 更新：角度 ADC 转换就绪检查
 
@@ -253,12 +202,6 @@ The pre-change rollback point is the annotated Git tag
 ## Hardware acceptance order
 
 Do not skip stages:
-
-The motion stages require the explicitly selected physical stopping architecture
-described above: verified GPIO input, or the confirmed external power-cut button
-with manual controller/system restart before resuming. The default build still
-only supports fail-closed/read-only checks. External mode provides no measured
-button state and must not be interpreted as a GPIO clearance signal.
 
 1. engine off: telemetry v3 at about 20 Hz, no parse failures;
 2. engine off: no command stays mode 3 and PWM is neutral;

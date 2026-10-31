@@ -27,9 +27,8 @@ int main(void)
   telemetry.command_action_bucket = 0.2f;
   telemetry.command_action_swing = -0.8f;
   telemetry.command_valid = 1U;
-  telemetry.estop = 1U;
-  telemetry.fault_flags = MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE;
-  assert(MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE == 0x20U);
+  telemetry.estop = 0U; /* Reserved wire field. */
+  telemetry.fault_flags = 0U;
 
   header_length = MotionTelemetry_BuildHeader(buffer, sizeof(buffer));
   assert(header_length > 0);
@@ -42,7 +41,7 @@ int main(void)
   assert(row_length > 0);
   assert(strncmp(buffer, "stm32_control_telemetry.v3,7,", 29U) == 0);
   assert(strstr(buffer, ",-0.600,0.400,0.200,-0.800,") != 0);
-  assert(strstr(buffer, ",0,1,0,0,0,0,32,0\n") != 0);
+  assert(strstr(buffer, ",0,0,0,0,0,0,0,0\n") != 0);
   assert(columns(buffer) == 55U);
   assert(row_length < (int)sizeof(buffer));
   /* 8N1 costs 10 bits/byte. Even a full 1023-byte row at 20 Hz uses

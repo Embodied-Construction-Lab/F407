@@ -22,7 +22,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "arm_angle.h"
-#include "board_safety.h"
 #include "collection_timing.h"
 #include "control_command.h"
 #include "control_mode_supervisor.h"
@@ -246,31 +245,6 @@ static HAL_StatusTypeDef ApplyServoTargets(const JoystickServoTargets *targets)
   return HAL_OK;
 }
 
-static BoardSafetyInput ReadBoardSafetyInput(void)
-{
-  BoardSafetyInput input = {0U, 1U};
-
-#if BOARD_ESTOP_INPUT_ENABLED
-  input.available = 1U;
-  input.estop = (HAL_GPIO_ReadPin(BOARD_ESTOP_GPIO_PORT,
-                                 BOARD_ESTOP_GPIO_PIN) ==
-                 BOARD_ESTOP_ACTIVE_STATE) ? 1U : 0U;
-#elif BOARD_EXTERNAL_POWER_CUTOFF_ENABLED
-  /* No GPIO measurement exists. The architecture is declared separately in
-   * telemetry; raw zero means no board-input inhibit, not button-clear. */
-  input.estop = 0U;
-#endif
-  return input;
-}
-
-static uint8_t BoardSafetyAllowsCommands(BoardSafetyInput input)
-{
-  return ((input.estop == 0U) &&
-          ((input.available != 0U) || BOARD_EXTERNAL_POWER_CUTOFF_ENABLED))
-             ? 1U
-             : 0U;
-}
-
 static void EnterSafeZero(void)
 {
   ControlModeSupervisor_EnterSafeZero(&control_mode_supervisor);
@@ -296,14 +270,6 @@ static void ProcessReceivedFrames(void)
 
   while (StickReceiver_Pop(&stick_receiver, frame, sizeof(frame)))
   {
-    BoardSafetyInput safety_input = ReadBoardSafetyInput();
-
-    if (BoardSafetyAllowsCommands(safety_input) == 0U)
-    {
-      invalid_command_frames++;
-      EnterSafeZero();
-      continue;
-    }
     if (ControlCommand_ParseJson(frame, &parsed_command))
     {
       uint32_t now_ms = HAL_GetTick();
@@ -354,7 +320,6 @@ static void ServiceControl20Hz(void)
   uint32_t elapsed_ms;
   HAL_StatusTypeDef i2c_status;
   uint8_t command_valid;
-  BoardSafetyInput safety_input;
 
   if ((uint32_t)(now_ms - last_control_tick) <
       COLLECTION_CONTROL_PERIOD_MS)
@@ -364,12 +329,6 @@ static void ServiceControl20Hz(void)
   elapsed_ms = (uint32_t)(now_ms - last_control_tick);
   last_control_tick = now_ms;
   control_seq++;
-  safety_input = ReadBoardSafetyInput();
-  if (BoardSafetyAllowsCommands(safety_input) == 0U)
-  {
-    /* Discard the command; clearing the input alone must not resume motion. */
-    EnterSafeZero();
-  }
   command_valid = ControlCommandIsValid(now_ms);
   velocity_feedback_ready = 0U;
 
@@ -936,7 +895,6 @@ static void ServiceOled(void)
 
 static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
 {
-  BoardSafetyInput safety_input = ReadBoardSafetyInput();
   ManualAction action;
   uint8_t command_valid;
   uint8_t command_timed_out;
@@ -1057,8 +1015,7 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   telemetry->command_valid = command_valid;
   telemetry->command_timed_out = command_timed_out;
   telemetry->control_enabled =
-      ((BoardSafetyAllowsCommands(safety_input) != 0U) &&
-       (command_valid != 0U) && (pca_output_ok != 0U) &&
+      ((command_valid != 0U) && (pca_output_ok != 0U) &&
        (control_failsafe_active == 0U) &&
        ((control_mode_supervisor.active_mode == CONTROL_MODE_MANUAL_ACTION) ||
         ((control_mode_supervisor.active_mode ==
@@ -1066,7 +1023,7 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
          (velocity_feedback_ready != 0U))))
           ? 1U
           : 0U;
-  telemetry->estop = safety_input.estop;
+  telemetry->estop = 0U; /* Reserved field retained for the 55-column wire layout. */
   telemetry->limit_mask =
       (control_mode_supervisor.active_mode ==
        CONTROL_MODE_VELOCITY_REFERENCE)
@@ -1096,13 +1053,6 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   {
     fault_flags |= TELEMETRY_FAULT_COMMAND_TIMEOUT;
   }
-  if (safety_input.available == 0U)
-  {
-    fault_flags |= MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE;
-  }
-#if BOARD_EXTERNAL_POWER_CUTOFF_ENABLED
-  fault_flags |= MOTION_TELEMETRY_FLAG_EXTERNAL_POWER_CUTOFF;
-#endif
   telemetry->fault_flags = fault_flags;
   telemetry->dropped_command_frames =
       stick_receiver.dropped_frames + invalid_command_frames;

@@ -7,7 +7,6 @@
 # STM32CubeIDE build output directories
 **/Debug/
 **/Release/
-**/Release_ExternalCutoff/
 **/.codex-build-workspace/
 
 # Compiler, linker and static-analysis artifacts

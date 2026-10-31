@@ -8,11 +8,6 @@ extern "C" {
 #include <stdint.h>
 
 #define MOTION_TELEMETRY_SCHEMA_VERSION "stm32_control_telemetry.v3"
-#define MOTION_TELEMETRY_FAULT_ESTOP_INPUT_UNAVAILABLE (1UL << 5)
-/* Architecture flag in the existing bitmask, not physical button feedback.
- * External cutoff also retains ESTOP_INPUT_UNAVAILABLE. Old hosts therefore
- * remain fail-closed; aware hosts must explicitly select the matching mode. */
-#define MOTION_TELEMETRY_FLAG_EXTERNAL_POWER_CUTOFF (1UL << 6)
 
 typedef enum
 {
@@ -73,7 +68,7 @@ typedef struct
   uint8_t command_valid;
   uint8_t command_timed_out;
   uint8_t control_enabled;
-  uint8_t estop;
+  uint8_t estop; /* Reserved wire field; not a measured hardware state. */
   uint32_t limit_mask;
   uint8_t rs485_ok;
   uint8_t dwj_ok;
