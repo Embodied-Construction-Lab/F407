@@ -121,8 +121,19 @@ pathlib.Path(sys.argv[2]).write_text(defines + source[start:end])
 PYCODE
 cc "${common[@]}" -I"${project_root}/Tests/fakes" -I"${build_dir}" \
   "${project_root}/Tests/imu_service_test.c" \
-  "${project_root}/Core/Src/imu_parser.c" -lm \
+  "${project_root}/Core/Src/imu_parser.c" \
+  "${project_root}/Core/Src/gyro_bias_calibrator.c" \
+  "${project_root}/Core/Src/control_command.c" -lm \
   -o "${build_dir}/imu_service_test"
 "${build_dir}/imu_service_test"
 "${build_dir}/imu_service_test" expiry
+"${build_dir}/imu_service_test" drift
+cc "${common[@]}" "${project_root}/Tests/gyro_bias_calibrator_test.c" \
+  "${project_root}/Core/Src/gyro_bias_calibrator.c" -lm \
+  -o "${build_dir}/gyro_bias_calibrator_test"
+"${build_dir}/gyro_bias_calibrator_test"
+cc "${common[@]}" "${project_root}/Tests/imu_parser_test.c" \
+  "${project_root}/Core/Src/imu_parser.c" -lm \
+  -o "${build_dir}/imu_parser_test"
+"${build_dir}/imu_parser_test"
 echo "data_celect host tests passed"

@@ -27,6 +27,7 @@
 #include "control_mode_supervisor.h"
 #include "dwj_reader.h"
 #include "ftepc_rs485.h"
+#include "gyro_bias_calibrator.h"
 #include "imu_oled_format.h"
 #include "imu_parser.h"
 #include "joystick_servo_map.h"
@@ -131,6 +132,8 @@ static uint8_t pca9685_ready;
 static uint8_t pca_output_ok;
 static ImuParser imu_parser;
 static ImuSample imu_latest;
+static GyroBiasCalibrator imu_gyro_bias;
+static volatile uint8_t imu_restart_requested;
 static uint8_t imu_sample_valid;
 static float imu_yaw_deg;
 static float imu_yaw_rate_deg_s;
@@ -446,13 +449,32 @@ static void Imu_NormalizeYaw(void)
 
 static void Imu_UpdateYawFromSample(void)
 {
-  imu_yaw_rate_deg_s = imu_latest.gz;
-
+  if ((GyroBiasCalibrator_IsReady(&imu_gyro_bias) == 0U) &&
+      (ControlCommandIsValid(HAL_GetTick()) != 0U) &&
+      !ControlCommand_IsZero(&latest_control_command))
+  {
+    GyroBiasCalibrator_ResetPending(&imu_gyro_bias);
+    imu_sample_valid = 0U;
+    imu_yaw_rate_deg_s = 0.0f;
+    imu_yaw_time_valid = 0U;
+    return;
+  }
+  if ((GyroBiasCalibrator_AddSample(&imu_gyro_bias, imu_latest.gz,
+                                    imu_latest.ts_ms) == 0U) ||
+      (GyroBiasCalibrator_IsReady(&imu_gyro_bias) == 0U))
+  {
+    imu_sample_valid = 0U;
+    imu_yaw_rate_deg_s = 0.0f;
+    imu_yaw_time_valid = 0U;
+    return;
+  }
+  imu_sample_valid = 1U;
+  imu_yaw_rate_deg_s = GyroBiasCalibrator_Correct(&imu_gyro_bias, imu_latest.gz);
   if (imu_yaw_time_valid != 0U)
   {
     uint64_t elapsed_ms = imu_latest.ts_ms - imu_last_ts_ms;
-
-    if ((imu_latest.ts_ms > imu_last_ts_ms) && (elapsed_ms < 1000U))
+    if ((imu_latest.ts_ms > imu_last_ts_ms) &&
+        (elapsed_ms < GYRO_BIAS_MAX_SAMPLE_GAP_MS))
     {
       float next_yaw = imu_yaw_deg +
                        imu_yaw_rate_deg_s * ((float)elapsed_ms / 1000.0f);
@@ -467,7 +489,6 @@ static void Imu_UpdateYawFromSample(void)
       Imu_NormalizeYaw();
     }
   }
-
   imu_last_ts_ms = imu_latest.ts_ms;
   imu_yaw_time_valid = 1U;
 }
@@ -475,7 +496,8 @@ static void Imu_UpdateYawFromSample(void)
 static void Imu_RxStart(void)
 {
   imu_sample_valid = 0U;
-  imu_yaw_deg = 0.0f;
+  /* UART recovery preserves heading and the frozen startup bias. */
+  GyroBiasCalibrator_ResetPending(&imu_gyro_bias);
   imu_yaw_rate_deg_s = 0.0f;
   imu_last_ts_ms = 0U;
   imu_yaw_time_valid = 0U;
@@ -490,28 +512,31 @@ static void Imu_RxStart(void)
   }
 }
 
-static void Imu_FeedBytes(const uint8_t *data, uint16_t length)
+static void Imu_OnSample(const ImuSample *sample, void *context)
 {
-  if ((data == NULL) || (length == 0U))
+  (void)context;
+  imu_latest = *sample;
+  if (!isfinite(imu_latest.gz))
   {
+    GyroBiasCalibrator_ResetPending(&imu_gyro_bias);
+    imu_sample_valid = 0U;
+    imu_yaw_time_valid = 0U;
+    imu_yaw_rate_deg_s = 0.0f;
     return;
   }
-
-  if (imu_parser_feed(&imu_parser, data, length, &imu_latest) != 0U)
+  Imu_UpdateYawFromSample();
+  if (imu_sample_valid != 0U)
   {
-    if (!isfinite(imu_latest.gz))
-    {
-      imu_sample_valid = 0U;
-      imu_yaw_time_valid = 0U;
-      imu_yaw_rate_deg_s = 0.0f;
-      return;
-    }
-    imu_sample_valid = 1U;
-    Imu_UpdateYawFromSample();
-    if (imu_sample_valid != 0U)
-    {
-      imu_last_received_tick = HAL_GetTick();
-    }
+    imu_last_received_tick = HAL_GetTick();
+  }
+}
+
+static void Imu_FeedBytes(const uint8_t *data, uint16_t length)
+{
+  if ((data != NULL) && (length > 0U))
+  {
+    /* Every native sample is integrated even when DMA batches several frames. */
+    (void)imu_parser_feed(&imu_parser, data, length, Imu_OnSample, NULL);
   }
 }
 
@@ -519,6 +544,12 @@ static void ServiceImu(void)
 {
   uint16_t current_pos;
 
+  if (imu_restart_requested != 0U)
+  {
+    imu_restart_requested = 0U;
+    (void)HAL_UART_AbortReceive(&huart1);
+    Imu_RxStart();
+  }
   if ((imu_sample_valid != 0U) &&
       ((uint32_t)(HAL_GetTick() - imu_last_received_tick) >=
        IMU_RECEIVE_TIMEOUT_MS))
@@ -660,7 +691,12 @@ static void OledWriteAngleImuPage(void)
   OledWriteFixedRow(2U, "S:", small_arm_angle_hundredths_deg, "");
   OledWriteTenthsRow(3U, "K:", dwj_readings.bucket.angle_tenths_deg, "");
 
-  if (imu_sample_valid == 0U)
+  if (GyroBiasCalibrator_IsReady(&imu_gyro_bias) == 0U)
+  {
+    OledSsd1306_WriteText(4U, 0, "IMU calibrating");
+    OledSsd1306_WriteText(5U, 0, "Keep still 10s");
+  }
+  else if (imu_sample_valid == 0U)
   {
     OledSsd1306_WriteText(4U, 0, "yaw: --");
     OledSsd1306_WriteText(5U, 0, "rate: --");
@@ -1193,6 +1229,8 @@ int main(void)
   JoystickServoMap_SetNeutral(&servo_targets);
   pca_output_ok = (ApplyServoTargets(&servo_targets) == HAL_OK) ? 1U : 0U;
   control_failsafe_active = 1U;
+  GyroBiasCalibrator_Init(&imu_gyro_bias);
+  imu_yaw_deg = 0.0f;
   Imu_RxStart();
   oled_ready = (OledSsd1306_Init(&hi2c2) == HAL_OK) ? 1U : 0U;
   last_encoder_poll_tick = HAL_GetTick();
@@ -1561,8 +1599,8 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
   }
   else if (huart->Instance == USART1)
   {
-    (void)HAL_UART_AbortReceive(&huart1);
-    Imu_RxStart();
+    /* Parser/heading state is owned by the main loop, never reset in ISR. */
+    imu_restart_requested = 1U;
   }
   else if (huart->Instance == USART3)
   {
