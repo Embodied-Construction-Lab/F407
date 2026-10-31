@@ -50,8 +50,7 @@ static void discard_bytes(ImuParser *parser, size_t count)
   memmove(parser->bytes, &parser->bytes[count], parser->length);
 }
 
-static uint8_t process_buffer(ImuParser *parser, ImuSampleCallback callback,
-                              void *context)
+static uint8_t process_buffer(ImuParser *parser, ImuSample *latest)
 {
   uint8_t produced = 0U;
 
@@ -76,12 +75,10 @@ static uint8_t process_buffer(ImuParser *parser, ImuSampleCallback callback,
       continue;
     }
 
-    ImuSample sample;
-    decode_frame(parser->bytes, &sample);
+    decode_frame(parser->bytes, latest);
     produced = 1U;
     parser->locked = 1U;
     discard_bytes(parser, IMU_FRAME_LEN);
-    callback(&sample, context);
   }
 
   return produced;
@@ -93,27 +90,20 @@ void imu_parser_init(ImuParser *parser)
 }
 
 uint8_t imu_parser_feed(ImuParser *parser, const uint8_t *data,
-                        size_t length, ImuSampleCallback callback,
-                        void *context)
+                        size_t length, ImuSample *latest)
 {
   uint8_t produced = 0U;
-
-  if ((parser == NULL) || (callback == NULL) ||
-      ((data == NULL) && (length != 0U)))
-  {
-    return 0U;
-  }
 
   while (length > 0U)
   {
     if (parser->length == IMU_SYNC_LEN)
     {
-      produced |= process_buffer(parser, callback, context);
+      produced |= process_buffer(parser, latest);
     }
 
     parser->bytes[parser->length++] = *data++;
     --length;
-    produced |= process_buffer(parser, callback, context);
+    produced |= process_buffer(parser, latest);
   }
 
   return produced;

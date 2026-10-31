@@ -13,10 +13,6 @@ typedef struct
   uint64_t ts_ms;
 } ImuSample;
 
-/* Called synchronously for each decoded frame, in wire order. The sample
-   pointer is valid only for the duration of this callback. */
-typedef void (*ImuSampleCallback)(const ImuSample *sample, void *context);
-
 typedef struct
 {
   uint8_t bytes[IMU_SYNC_LEN];
@@ -26,7 +22,6 @@ typedef struct
 
 void imu_parser_init(ImuParser *parser);
 uint8_t imu_parser_feed(ImuParser *parser, const uint8_t *data,
-                        size_t length, ImuSampleCallback callback,
-                        void *context);
+                        size_t length, ImuSample *latest);
 
 #endif
