@@ -107,4 +107,22 @@ cc "${common[@]}" -I"${project_root}/Tests/fakes" -I"${build_dir}" \
   "${project_root}/Core/Src/pwm_timing.c" \
   -o "${build_dir}/manual_control_service_test"
 "${build_dir}/manual_control_service_test"
+
+# Compile the actual IMU receive/expiry service with a synthetic DMA buffer.
+python3 - "${project_root}/Core/Src/main.c" "${build_dir}/imu_service_under_test.inc" <<'PYCODE'
+import pathlib
+import sys
+source = pathlib.Path(sys.argv[1]).read_text()
+start = source.index("static void Imu_NormalizeYaw(void)\n{")
+end = source.index("\nstatic void FormatFixedHundredths", start)
+defines = "\n".join(line for line in source.splitlines()
+                    if line.startswith("#define IMU_RECEIVE_TIMEOUT_MS")) + "\n"
+pathlib.Path(sys.argv[2]).write_text(defines + source[start:end])
+PYCODE
+cc "${common[@]}" -I"${project_root}/Tests/fakes" -I"${build_dir}" \
+  "${project_root}/Tests/imu_service_test.c" \
+  "${project_root}/Core/Src/imu_parser.c" -lm \
+  -o "${build_dir}/imu_service_test"
+"${build_dir}/imu_service_test"
+"${build_dir}/imu_service_test" expiry
 echo "data_celect host tests passed"

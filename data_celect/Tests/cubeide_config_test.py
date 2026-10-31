@@ -7,6 +7,13 @@ PROJECT = Path(__file__).resolve().parents[1]
 
 
 class CubeIDEConfigTest(unittest.TestCase):
+    def test_ioc_uses_active_project_name(self):
+        settings = dict(line.split('=', 1) for line in
+                        (PROJECT / 'data_celect.ioc').read_text().splitlines()
+                        if '=' in line and not line.startswith('#'))
+        self.assertEqual(settings['ProjectManager.ProjectName'], 'data_celect')
+        self.assertEqual(settings['ProjectManager.ProjectFileName'], 'data_celect.ioc')
+
     def test_standard_profiles_have_consistent_project_paths(self):
         root = ET.parse(PROJECT / '.cproject').getroot()
         configs = {c.attrib['name']: c for c in root.findall('.//configuration')}

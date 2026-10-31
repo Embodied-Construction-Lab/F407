@@ -2,6 +2,7 @@
 #include "safety_limits.h"
 
 #include <assert.h>
+#include <math.h>
 #include <string.h>
 
 static void assert_float_equal(float actual, float expected, float tolerance)
@@ -97,6 +98,29 @@ static void test_physical_limits_and_retreat(void)
   }
 }
 
+static void test_finite_reference_conversion_overflow(void)
+{
+  const ControlAxisCommand overflow[] = {
+    {1e38f, 0, 0, 0}, {-1e38f, 0, 0, 0},
+    {0, 1e38f, 0, 0}, {0, -1e38f, 0, 0},
+    {0, 0, 1e38f, 0}, {0, 0, -1e38f, 0}
+  };
+  for (unsigned index = 0; index < sizeof(overflow) / sizeof(overflow[0]); ++index)
+  {
+    VelocityControl controller;
+    VelocityControlOutput output = {0};
+    VelocityControlFeedback feedback = in_range_feedback();
+    VelocityControl_Init(&controller);
+    assert(isfinite(overflow[index].boom) && isfinite(overflow[index].stick) &&
+           isfinite(overflow[index].bucket));
+    assert(!VelocityControl_Update(&controller, &overflow[index], &feedback,
+                                   0.05f, &output));
+    assert(controller.boom_pid.has_previous_error == 0U);
+    assert(controller.stick_pid.has_previous_error == 0U);
+    assert(controller.bucket_pid.has_previous_error == 0U);
+  }
+}
+
 int main(void)
 {
   VelocityControl controller;
@@ -143,6 +167,7 @@ int main(void)
   assert_float_equal(output.target.boom, 0.0f, 0.0001f);
   assert_float_equal(output.valve_action.boom, 0.0f, 0.0001f);
   assert((output.limit_mask & VELOCITY_LIMIT_BOOM) != 0U);
+  test_finite_reference_conversion_overflow();
   test_measured_extension_feedback();
   test_physical_limits_and_retreat();
   return 0;

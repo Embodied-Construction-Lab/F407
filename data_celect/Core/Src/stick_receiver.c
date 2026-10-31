@@ -68,7 +68,9 @@ void StickReceiver_FeedFromIsr(StickReceiver *receiver,
       continue;
     }
 
-    if (receiver->current_length >= (STICK_FRAME_MAX_LEN - 1U))
+    /* C-string parsing cannot see bytes after NUL: reject the entire line. */
+    if ((byte == 0U) ||
+        (receiver->current_length >= (STICK_FRAME_MAX_LEN - 1U)))
     {
       receiver->dropping_frame = 1U;
       receiver->current_length = 0U;

@@ -38,6 +38,7 @@
 #include "status_led.h"
 #include "velocity_control.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -65,6 +66,8 @@ typedef enum
 /* USER CODE BEGIN PD */
 #define USART2_DMA_RX_SIZE 512U
 #define IMU_DMA_RX_SIZE 8192U
+/* Receive-age deadline, not a mechanical angle or velocity limit. */
+#define IMU_RECEIVE_TIMEOUT_MS 500U
 #define ENCODER485_SLAVE_ADDRESS 1U
 #define ENCODER485_TIMEOUT_MS 50U
 #define ENCODER485_REQUEST_LEN 8U
@@ -133,6 +136,7 @@ static float imu_yaw_deg;
 static float imu_yaw_rate_deg_s;
 static uint64_t imu_last_ts_ms;
 static uint8_t imu_yaw_time_valid;
+static uint32_t imu_last_received_tick;
 static Ftepc485_Data encoder_data;
 static Ftepc485_Status encoder_status = FTEPC485_ERROR_UART;
 static int32_t encoder_last_pulse[FTEPC485_CHANNEL_COUNT];
@@ -410,7 +414,8 @@ static void ServiceControl20Hz(void)
       control_failsafe_active = 1U;
     }
   }
-  else if (control_failsafe_active == 0U)
+  /* A failed neutral write must be retried; PCA retains its previous PWM. */
+  else if ((control_failsafe_active == 0U) || (pca_output_ok == 0U))
   {
     if (command_valid == 0U)
     {
@@ -431,12 +436,9 @@ static void ServiceControl20Hz(void)
 
 static void Imu_NormalizeYaw(void)
 {
-  while (imu_yaw_deg >= 360.0f)
-  {
-    imu_yaw_deg -= 360.0f;
-  }
-
-  while (imu_yaw_deg < 0.0f)
+  /* Constant-time reduction also handles large finite corrupted samples. */
+  imu_yaw_deg = fmodf(imu_yaw_deg, 360.0f);
+  if (imu_yaw_deg < 0.0f)
   {
     imu_yaw_deg += 360.0f;
   }
@@ -452,7 +454,16 @@ static void Imu_UpdateYawFromSample(void)
 
     if ((imu_latest.ts_ms > imu_last_ts_ms) && (elapsed_ms < 1000U))
     {
-      imu_yaw_deg += imu_yaw_rate_deg_s * ((float)elapsed_ms / 1000.0f);
+      float next_yaw = imu_yaw_deg +
+                       imu_yaw_rate_deg_s * ((float)elapsed_ms / 1000.0f);
+      if (!isfinite(next_yaw))
+      {
+        imu_sample_valid = 0U;
+        imu_yaw_time_valid = 0U;
+        imu_yaw_rate_deg_s = 0.0f;
+        return;
+      }
+      imu_yaw_deg = next_yaw;
       Imu_NormalizeYaw();
     }
   }
@@ -468,6 +479,7 @@ static void Imu_RxStart(void)
   imu_yaw_rate_deg_s = 0.0f;
   imu_last_ts_ms = 0U;
   imu_yaw_time_valid = 0U;
+  imu_last_received_tick = HAL_GetTick();
   imu_dma_last_pos = 0U;
   imu_parser_init(&imu_parser);
 
@@ -487,8 +499,19 @@ static void Imu_FeedBytes(const uint8_t *data, uint16_t length)
 
   if (imu_parser_feed(&imu_parser, data, length, &imu_latest) != 0U)
   {
+    if (!isfinite(imu_latest.gz))
+    {
+      imu_sample_valid = 0U;
+      imu_yaw_time_valid = 0U;
+      imu_yaw_rate_deg_s = 0.0f;
+      return;
+    }
     imu_sample_valid = 1U;
     Imu_UpdateYawFromSample();
+    if (imu_sample_valid != 0U)
+    {
+      imu_last_received_tick = HAL_GetTick();
+    }
   }
 }
 
@@ -496,6 +519,15 @@ static void ServiceImu(void)
 {
   uint16_t current_pos;
 
+  if ((imu_sample_valid != 0U) &&
+      ((uint32_t)(HAL_GetTick() - imu_last_received_tick) >=
+       IMU_RECEIVE_TIMEOUT_MS))
+  {
+    imu_sample_valid = 0U;
+    imu_yaw_time_valid = 0U;
+    imu_yaw_rate_deg_s = 0.0f;
+    /* Keep accumulated yaw; do not integrate across the missing interval. */
+  }
   if (huart1.hdmarx == NULL)
   {
     return;

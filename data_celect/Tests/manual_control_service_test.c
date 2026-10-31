@@ -30,6 +30,7 @@ static Ftepc485_Data encoder_data;
 static Ftepc485_Status encoder_status;
 static JoystickServoTargets servo_targets, applied_targets;
 static unsigned applied_count;
+static unsigned failed_writes_remaining;
 static uint8_t control_received;
 static uint32_t command_rx_seq, command_source_stamp_ms, command_received_stamp_ms;
 static uint32_t sensor_seq, sensor_stamp_ms, last_sent_sensor_seq;
@@ -42,8 +43,13 @@ static StickReceiver stick_receiver;
 uint32_t HAL_GetTick(void) { return tick; }
 static HAL_StatusTypeDef ApplyServoTargets(const JoystickServoTargets *targets)
 {
-  applied_targets = *targets;
   ++applied_count;
+  if (failed_writes_remaining != 0U)
+  {
+    --failed_writes_remaining;
+    return HAL_ERROR;
+  }
+  applied_targets = *targets;
   return HAL_OK;
 }
 
@@ -71,6 +77,7 @@ static void start_manual(void)
   control_failsafe_active = 0U;
   pca_output_ok = 1U;
   applied_count = 0U;
+  failed_writes_remaining = 0U;
   last_control_tick = 0U;
   last_valid_control_tick = 0U;
   tick = COLLECTION_CONTROL_PERIOD_MS;
@@ -260,8 +267,49 @@ static void test_command_lifecycle(void)
   }
 }
 
+static void test_failed_neutral_is_retried(void)
+{
+  for (unsigned mode = 0; mode < 2; ++mode)
+  {
+    MotionTelemetry telemetry;
+    start_manual();
+    if (mode != 0U)
+    {
+      control_mode_supervisor.active_mode = CONTROL_MODE_VELOCITY_REFERENCE;
+      latest_control_command.mode = CONTROL_MODE_VELOCITY_REFERENCE;
+    }
+    latest_control_command.axis.boom = mode ? 0.01f : 0.6f;
+    ServiceControl20Hz();
+    assert(applied_targets.pump_percent != 0.0f);
+
+    /* A failed I2C write leaves the PCA holding its preceding moving output. */
+    tick = last_valid_control_tick + JOYSTICK_CONTROL_TIMEOUT_MS + 1U;
+    failed_writes_remaining = 2U;
+    ServiceControl20Hz();
+    assert(pca_output_ok == 0U);
+    assert(applied_targets.pump_percent != 0.0f);
+    tick += COLLECTION_CONTROL_PERIOD_MS;
+    ServiceControl20Hz();
+    assert(pca_output_ok == 0U);
+    tick += COLLECTION_CONTROL_PERIOD_MS;
+    ServiceControl20Hz();
+    assert_neutral();
+    assert(pca_output_ok == 1U);
+    FillMotionTelemetry(&telemetry, tick);
+    assert(telemetry.control_enabled == 0U);
+    assert(telemetry.control_mode == MOTION_CONTROL_MODE_SAFE_ZERO);
+
+    /* Once neutral succeeds, a fault does not cause redundant I2C writes. */
+    unsigned writes = applied_count;
+    tick += COLLECTION_CONTROL_PERIOD_MS;
+    ServiceControl20Hz();
+    assert(applied_count == writes);
+  }
+}
+
 int main(void)
 {
+  test_failed_neutral_is_retried();
   test_velocity_telemetry();
 
   /* At both endpoints, block only the outward direction and allow retreat. */

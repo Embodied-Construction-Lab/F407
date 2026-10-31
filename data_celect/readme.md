@@ -45,6 +45,17 @@ Windows CubeIDE 导入/构建仍由现场执行。不将编译通过称为已烧
 
 工具说明：[ST官方 STM32CubeProgrammer 文档](https://www.st.com/en/development-tools/stm32cubeprog.html)。
 
+### 2026-10-31 烧录前复查修复
+
+- 命令只接受两种现有 schema 的完整 JSON 对象；拒绝截断、重复字段、非法数值与超范围手动杆量。
+- 中位输出遇到 I²C 写入失败时，在后续控制周期继续重试，不把写入失败当作已归零。
+- IMU 非有限值与超过 500 ms 未收到有效新帧会使反馈失效；角度归一化使用有界计算，不修改漂移补偿或零点。
+- `.ioc` 工程名与 `data_celect` 统一。仅修复元数据，不重新生成外设代码。
+
+本轮保留速度 v2、手动 v1、遥测 v3、PID、阀方向、PWM 和机械限位。
+烧录应使用本轮重新构建的产物；旧构建不能包含这些修复。
+验证与产物身份见 [烧录前复查记录](../../EvaluationReport/2026-10-31_f407_preflash_review/README.md)。
+
 ## 2026-10-29 更新：V5 RL 速度协议 v2
 
 速度命令改为 `stm32_velocity_command.v2`：boom、stick、bucket 均以油缸伸长为正，
@@ -158,8 +169,8 @@ Only one process may own `/dev/ttyTHS1`:
 
 ```text
 RL Follow ends and sends terminal velocity zero
-→ stop orin_state_sender.py
-→ collector/ACT opens the same serial port and synchronizes command_seq
+→ exit the active earthmoving-autonomy runtime and release its serial port
+→ the next teleop/ACT runtime opens that port and synchronizes command_seq
 → manual zero claims manual mode
 → demonstration or ACT motion may begin
 ```

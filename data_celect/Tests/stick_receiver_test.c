@@ -1,6 +1,7 @@
 #include "stick_receiver.h"
 
 #include <assert.h>
+#include <string.h>
 
 int main(void)
 {
@@ -27,5 +28,22 @@ int main(void)
   assert(StickReceiver_IsNewSequence(8U, 7U, true));
   assert(!StickReceiver_IsNewSequence(7U, 7U, true));
   assert(!StickReceiver_IsNewSequence(6U, 7U, true));
+  {
+    StickReceiver receiver;
+    char frame[STICK_FRAME_MAX_LEN];
+    const uint8_t nul_and_tail[] = {0U, 'b', 'a', 'd', '\n'};
+    StickReceiver_Init(&receiver);
+    /* A complete JSON prefix plus embedded NUL is still a corrupt wire frame. */
+    StickReceiver_FeedFromIsr(&receiver, (const uint8_t *)valid, (uint16_t)strlen(valid));
+    StickReceiver_FeedFromIsr(&receiver, nul_and_tail, sizeof(nul_and_tail));
+    assert(!StickReceiver_Pop(&receiver, frame, sizeof(frame)));
+    assert(receiver.dropped_frames == 1U);
+    StickReceiver_FeedFromIsr(&receiver, (const uint8_t *)valid, (uint16_t)strlen(valid));
+    StickReceiver_FeedFromIsr(&receiver, (const uint8_t *)"\n", 1U);
+    assert(StickReceiver_Pop(&receiver, frame, sizeof(frame)));
+    assert(StickReceiver_ParseJson(frame, &stick));
+    assert(stick.command_seq == 7U);
+    assert(!StickReceiver_Pop(&receiver, frame, sizeof(frame)));
+  }
   return 0;
 }

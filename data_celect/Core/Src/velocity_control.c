@@ -120,6 +120,12 @@ bool VelocityControl_Update(VelocityControl *controller,
   }
 
   requested_target = target_from_physical(physical_reference);
+  /* Finite wire values can overflow during m/s -> mm/s conversion. */
+  if (!isfinite(requested_target.y2) || !isfinite(requested_target.y1) ||
+      !isfinite(requested_target.x2) || !isfinite(requested_target.x1))
+  {
+    return false;
+  }
   limited_target = requested_target;
   limits_feedback.boom_length_hundredths_mm =
       feedback->boom_length_hundredths_mm;
