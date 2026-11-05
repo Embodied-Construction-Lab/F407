@@ -45,6 +45,13 @@ cc "${common[@]}" \
   "${project_root}/Core/Src/motion_telemetry.c" \
   -o "${build_dir}/motion_telemetry_v2_test"
 
+cc "${common[@]}" \
+  "${project_root}/Tests/velocity_servo_map_test.c" \
+  "${project_root}/Core/Src/joystick_servo_map.c" \
+  "${project_root}/Core/Src/servo_control.c" \
+  "${project_root}/Core/Src/pwm_timing.c" -lm \
+  -o "${build_dir}/velocity_servo_map_test"
+
 cc "${common[@]}" -I"${project_root}/Tests/fakes" \
   "${project_root}/Tests/oled_ssd1306_test.c" \
   "${project_root}/Core/Src/oled_ssd1306.c" \
@@ -59,6 +66,7 @@ cc "${common[@]}" \
 "${build_dir}/control_mode_supervisor_test"
 "${build_dir}/velocity_control_test"
 "${build_dir}/manual_action_test"
+"${build_dir}/velocity_servo_map_test"
 "${build_dir}/motion_telemetry_v2_test"
 "${build_dir}/oled_ssd1306_test"
 "${build_dir}/collection_timing_test"

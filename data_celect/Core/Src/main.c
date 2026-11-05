@@ -397,11 +397,10 @@ static void ServiceControl20Hz(void)
                                (float)elapsed_ms / 1000.0f,
                                &velocity_output))
     {
-      JoystickServoMap_Compute(velocity_output.valve_action.swing,
-                               velocity_output.valve_action.bucket,
+      VelocityServoMap_Compute(velocity_output.valve_action.boom,
                                velocity_output.valve_action.stick,
-                               velocity_output.valve_action.boom,
-                               0.0f, 0.0f, &servo_targets);
+                               velocity_output.valve_action.bucket,
+                               velocity_output.valve_action.swing, &servo_targets);
       i2c_status = ApplyServoTargets(&servo_targets);
       velocity_feedback_ready = 1U;
       control_failsafe_active = 0U;

@@ -63,6 +63,12 @@ void JoystickServoMap_SetNeutral(JoystickServoTargets *targets);
 void JoystickServoMap_Compute(float x1, float x2, float y1, float y2,
                               float z1, float z2,
                               JoystickServoTargets *targets);
+/* PID valve-direction efforts [-1,1], NOT physical speeds or manual sticks.
+   Uses existing valve opening endpoints without the manual input deadzone.
+   Exact zero is neutral; swing is linear ESC output; tracks remain neutral. */
+void VelocityServoMap_Compute(float boom_effort, float stick_effort,
+                              float bucket_effort, float swing_effort,
+                              JoystickServoTargets *targets);
 bool JoystickServoMap_IsActiveChannel(uint8_t channel);
 bool JoystickServoMap_IsTimedOut(uint32_t now_ms, uint32_t last_valid_ms);
 

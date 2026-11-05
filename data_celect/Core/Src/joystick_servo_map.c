@@ -3,6 +3,7 @@
 #include "servo_control.h"
 
 #include <stddef.h>
+#include <math.h>
 
 static float absolute(float value)
 {
@@ -51,22 +52,21 @@ static float valve_angle_from_axis(float axis,
                                    float positive_min_deg,
                                    float positive_max_deg,
                                    float negative_min_deg,
-                                   float negative_max_deg)
+                                   float negative_max_deg,
+                                   float input_deadzone)
 {
   float magnitude;
 
   if (axis > 0.0f)
   {
-    magnitude = (axis - JOYSTICK_DEAD_ZONE) /
-                (1.0f - JOYSTICK_DEAD_ZONE);
+    magnitude = (axis - input_deadzone) / (1.0f - input_deadzone);
     return positive_min_deg +
            magnitude * (positive_max_deg - positive_min_deg);
   }
 
   if (axis < 0.0f)
   {
-    magnitude = (-axis - JOYSTICK_DEAD_ZONE) /
-                (1.0f - JOYSTICK_DEAD_ZONE);
+    magnitude = (-axis - input_deadzone) / (1.0f - input_deadzone);
     return negative_max_deg -
            magnitude * (negative_max_deg - negative_min_deg);
   }
@@ -134,19 +134,19 @@ void JoystickServoMap_Compute(float x1, float x2, float y1, float y2,
       JOYSTICK_BUCKET_POSITIVE_MIN_DEG,
       JOYSTICK_BUCKET_POSITIVE_MAX_DEG,
       JOYSTICK_BUCKET_NEGATIVE_MIN_DEG,
-      JOYSTICK_BUCKET_NEGATIVE_MAX_DEG);
+      JOYSTICK_BUCKET_NEGATIVE_MAX_DEG, JOYSTICK_DEAD_ZONE);
   targets->big_arm_deg = valve_angle_from_axis(
       y2,
       JOYSTICK_BIG_ARM_POSITIVE_MIN_DEG,
       JOYSTICK_BIG_ARM_POSITIVE_MAX_DEG,
       JOYSTICK_BIG_ARM_NEGATIVE_MIN_DEG,
-      JOYSTICK_BIG_ARM_NEGATIVE_MAX_DEG);
+      JOYSTICK_BIG_ARM_NEGATIVE_MAX_DEG, JOYSTICK_DEAD_ZONE);
   targets->small_arm_deg = valve_angle_from_axis(
       y1,
       JOYSTICK_SMALL_ARM_POSITIVE_MIN_DEG,
       JOYSTICK_SMALL_ARM_POSITIVE_MAX_DEG,
       JOYSTICK_SMALL_ARM_NEGATIVE_MIN_DEG,
-      JOYSTICK_SMALL_ARM_NEGATIVE_MAX_DEG);
+      JOYSTICK_SMALL_ARM_NEGATIVE_MAX_DEG, JOYSTICK_DEAD_ZONE);
 
   targets->swing_percent = x1 * JOYSTICK_SWING_MAX_PERCENT;
   targets->pump_percent = ((x2 != 0.0f) || (y2 != 0.0f) || (y1 != 0.0f))
@@ -154,6 +154,48 @@ void JoystickServoMap_Compute(float x1, float x2, float y1, float y2,
                               : 0.0f;
   targets->left_drive_percent =  - z1 * 20.0f;
   targets->right_drive_percent =  + z2 * 20.0f;
+  update_pwm_counts(targets);
+}
+
+static float clamp_effort(float value)
+{
+  return (value > 1.0f) ? 1.0f : ((value < -1.0f) ? -1.0f : value);
+}
+
+void VelocityServoMap_Compute(float boom_effort, float stick_effort,
+                              float bucket_effort, float swing_effort,
+                              JoystickServoTargets *targets)
+{
+  if (targets == NULL)
+  {
+    return;
+  }
+  if (!isfinite(boom_effort) || !isfinite(stick_effort) ||
+      !isfinite(bucket_effort) || !isfinite(swing_effort))
+  {
+    JoystickServoMap_SetNeutral(targets);
+    return;
+  }
+  boom_effort = clamp_effort(boom_effort * JOYSTICK_Y2_DIRECTION);
+  stick_effort = clamp_effort(stick_effort * JOYSTICK_Y1_DIRECTION);
+  bucket_effort = clamp_effort(bucket_effort * JOYSTICK_X2_DIRECTION);
+  swing_effort = clamp_effort(swing_effort * JOYSTICK_X1_DIRECTION);
+  /* Keep the physical opening compensation, but do not subtract 0.15 again.
+     This is discontinuous at zero; low-speed hydraulic response needs testing. */
+  targets->big_arm_deg = valve_angle_from_axis(boom_effort,
+      JOYSTICK_BIG_ARM_POSITIVE_MIN_DEG, JOYSTICK_BIG_ARM_POSITIVE_MAX_DEG,
+      JOYSTICK_BIG_ARM_NEGATIVE_MIN_DEG, JOYSTICK_BIG_ARM_NEGATIVE_MAX_DEG, 0.0f);
+  targets->small_arm_deg = valve_angle_from_axis(stick_effort,
+      JOYSTICK_SMALL_ARM_POSITIVE_MIN_DEG, JOYSTICK_SMALL_ARM_POSITIVE_MAX_DEG,
+      JOYSTICK_SMALL_ARM_NEGATIVE_MIN_DEG, JOYSTICK_SMALL_ARM_NEGATIVE_MAX_DEG, 0.0f);
+  targets->bucket_deg = valve_angle_from_axis(bucket_effort,
+      JOYSTICK_BUCKET_POSITIVE_MIN_DEG, JOYSTICK_BUCKET_POSITIVE_MAX_DEG,
+      JOYSTICK_BUCKET_NEGATIVE_MIN_DEG, JOYSTICK_BUCKET_NEGATIVE_MAX_DEG, 0.0f);
+  targets->swing_percent = swing_effort * JOYSTICK_SWING_MAX_PERCENT;
+  targets->pump_percent = (boom_effort != 0.0f || stick_effort != 0.0f || bucket_effort != 0.0f)
+                              ? JOYSTICK_FIXED_PUMP_PERCENT : 0.0f;
+  targets->left_drive_percent = 0.0f;
+  targets->right_drive_percent = 0.0f;
   update_pwm_counts(targets);
 }
 

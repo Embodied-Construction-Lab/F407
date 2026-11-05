@@ -307,8 +307,91 @@ static void test_failed_neutral_is_retried(void)
   }
 }
 
+static void test_small_velocity_reaches_pwm_and_keeps_limits(void)
+{
+  const unsigned channels[] = {JOYSTICK_CHANNEL_BIG_ARM, JOYSTICK_CHANNEL_SMALL_ARM,
+                              JOYSTICK_CHANNEL_BUCKET, JOYSTICK_CHANNEL_SWING};
+  JoystickServoTargets neutral;
+  JoystickServoMap_SetNeutral(&neutral);
+  for (unsigned axis = 0; axis < 4; ++axis)
+  {
+    for (int direction = -1; direction <= 1; direction += 2)
+    {
+      const float speed = direction * (axis == 3 ? 0.02f : 0.001f);
+      start_manual();
+      control_mode_supervisor.active_mode = CONTROL_MODE_VELOCITY_REFERENCE;
+      latest_control_command.mode = CONTROL_MODE_VELOCITY_REFERENCE;
+      set_axis(axis, speed);
+      ServiceControl20Hz();
+      /* Exercise the actual main.c -> PID -> limits -> mapping -> PWM path. */
+      assert(applied_targets.pwm_count[channels[axis]] != neutral.pwm_count[channels[axis]]);
+      const int valve_direction = direction * (axis == 2 ? -1 : 1);
+      assert(((int)applied_targets.pwm_count[channels[axis]] -
+              (int)neutral.pwm_count[channels[axis]]) * valve_direction > 0);
+      assert(applied_targets.pump_percent == (axis == 3 ? 0.0f : JOYSTICK_FIXED_PUMP_PERCENT));
+      assert(applied_targets.left_drive_percent == 0.0f);
+      assert(applied_targets.right_drive_percent == 0.0f);
+
+      set_endpoint(axis, direction > 0);
+      tick += COLLECTION_CONTROL_PERIOD_MS;
+      ServiceControl20Hz();
+      assert_neutral();
+      set_axis(axis, -speed);
+      tick += COLLECTION_CONTROL_PERIOD_MS;
+      ServiceControl20Hz();
+      assert(applied_targets.pwm_count[channels[axis]] != neutral.pwm_count[channels[axis]]);
+
+      /* Explicit zero is neutral even with residual measured motion. */
+      encoder_data.speed_hundredths_mm_s[0] = 1000;
+      encoder_data.speed_hundredths_mm_s[1] = -1000;
+      encoder_data.speed_hundredths_mm_s[2] = 1000;
+      imu_yaw_rate_deg_s = 10.0f;
+      set_axis(axis, 0.0f);
+      tick += COLLECTION_CONTROL_PERIOD_MS;
+      ServiceControl20Hz();
+      assert_neutral();
+    }
+  }
+}
+
+static void test_feedback_reversal_still_respects_output_limits(void)
+{
+  for (int direction = -1; direction <= 1; direction += 2)
+  {
+    start_manual();
+    control_mode_supervisor.active_mode = CONTROL_MODE_VELOCITY_REFERENCE;
+    latest_control_command.mode = CONTROL_MODE_VELOCITY_REFERENCE;
+    latest_control_command.axis = (ControlAxisCommand){direction * .001f,
+        direction * .001f, direction * .001f, direction * .02f};
+    encoder_data.speed_hundredths_mm_s[0] = direction * 10000;
+    encoder_data.speed_hundredths_mm_s[1] = direction * 10000;
+    encoder_data.speed_hundredths_mm_s[2] = direction * 10000;
+    imu_yaw_rate_deg_s = direction * 100.0f;
+    ServiceControl20Hz();
+    assert(velocity_output.valve_action.boom * direction < 0.0f);
+    assert(velocity_output.valve_action.stick * direction < 0.0f);
+    assert(velocity_output.valve_action.bucket * direction > 0.0f);
+    assert(velocity_output.valve_action.swing * direction < 0.0f);
+    /* Target is inward, but large measured speed makes PID request outward. */
+    for (unsigned axis = 0; axis < 4; ++axis)
+    {
+      set_endpoint(axis, direction < 0);
+    }
+    tick += COLLECTION_CONTROL_PERIOD_MS;
+    ServiceControl20Hz();
+    assert(velocity_output.target.boom != 0.0f);
+    assert(velocity_output.target.stick != 0.0f);
+    assert(velocity_output.target.bucket != 0.0f);
+    assert(velocity_output.target.swing != 0.0f);
+    assert(velocity_output.limit_mask == 15U);
+    assert_neutral();
+  }
+}
+
 int main(void)
 {
+  test_small_velocity_reaches_pwm_and_keeps_limits();
+  test_feedback_reversal_still_respects_output_limits();
   test_failed_neutral_is_retried();
   test_velocity_telemetry();
 
