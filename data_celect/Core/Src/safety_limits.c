@@ -33,15 +33,19 @@ float SafetyLimits_NormalizeYawDeg(float yaw_deg)
   return yaw_deg;
 }
 
-void SafetyLimits_Apply(AxisControlSample *sample,
-                        const SafetyLimitsFeedback *feedback)
+static uint32_t apply_bounds(AxisControlSample *sample,
+                              const SafetyLimitsFeedback *feedback,
+                              int32_t stick_min, int32_t bucket_min,
+                              int32_t bucket_max)
 {
   float yaw_deg;
+  AxisControlSample requested;
 
   if ((sample == NULL) || (feedback == NULL))
   {
-    return;
+    return 0U;
   }
+  requested = *sample;
   yaw_deg = SafetyLimits_NormalizeYawDeg(feedback->yaw_deg);
   if ((yaw_deg >= SAFETY_LIMIT_SWING_MAX_DEG) && (sample->x1 > 0.0f))
   {
@@ -54,12 +58,11 @@ void SafetyLimits_Apply(AxisControlSample *sample,
 
   sample->x2 = limit_linear_axis(
       sample->x2, feedback->bucket_length_hundredths_mm,
-      SAFETY_LIMIT_BUCKET_MIN_HUNDREDTHS_MM,
-      SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM,
+      bucket_min, bucket_max,
       SAFETY_LIMIT_BUCKET_POSITIVE_INCREASES_LENGTH);
   sample->y1 = limit_linear_axis(
       sample->y1, feedback->stick_length_hundredths_mm,
-      SAFETY_LIMIT_STICK_MIN_HUNDREDTHS_MM,
+      stick_min,
       SAFETY_LIMIT_STICK_MAX_HUNDREDTHS_MM,
       SAFETY_LIMIT_STICK_POSITIVE_INCREASES_LENGTH);
   sample->y2 = limit_linear_axis(
@@ -67,4 +70,24 @@ void SafetyLimits_Apply(AxisControlSample *sample,
       SAFETY_LIMIT_BOOM_MIN_HUNDREDTHS_MM,
       SAFETY_LIMIT_BOOM_MAX_HUNDREDTHS_MM,
       SAFETY_LIMIT_BOOM_POSITIVE_INCREASES_LENGTH);
+  return ((sample->y2 != requested.y2) ? SAFETY_LIMIT_MASK_BOOM : 0U) |
+         ((sample->y1 != requested.y1) ? SAFETY_LIMIT_MASK_STICK : 0U) |
+         ((sample->x2 != requested.x2) ? SAFETY_LIMIT_MASK_BUCKET : 0U) |
+         ((sample->x1 != requested.x1) ? SAFETY_LIMIT_MASK_SWING : 0U);
+}
+
+uint32_t SafetyLimits_Apply(AxisControlSample *sample,
+                            const SafetyLimitsFeedback *feedback)
+{
+  return apply_bounds(sample, feedback, SAFETY_LIMIT_STICK_MIN_HUNDREDTHS_MM,
+                      SAFETY_LIMIT_BUCKET_MIN_HUNDREDTHS_MM,
+                      SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM);
+}
+
+uint32_t SafetyLimits_ApplyManual(AxisControlSample *sample,
+                                  const SafetyLimitsFeedback *feedback)
+{
+  return apply_bounds(sample, feedback, MANUAL_LIMIT_STICK_MIN_HUNDREDTHS_MM,
+                      MANUAL_LIMIT_BUCKET_MIN_HUNDREDTHS_MM,
+                      MANUAL_LIMIT_BUCKET_MAX_HUNDREDTHS_MM);
 }

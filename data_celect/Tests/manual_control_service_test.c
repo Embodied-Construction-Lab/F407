@@ -26,6 +26,7 @@ static ControlCommand latest_control_command;
 static ControlModeSupervisor control_mode_supervisor;
 static VelocityControl velocity_controller;
 static VelocityControlOutput velocity_output;
+static uint32_t manual_limit_mask;
 static Ftepc485_Data encoder_data;
 static Ftepc485_Status encoder_status;
 static JoystickServoTargets servo_targets, applied_targets;
@@ -135,6 +136,20 @@ static void set_endpoint(unsigned axis, unsigned upper)
       imu_yaw_deg = upper ? SAFETY_LIMIT_SWING_MAX_DEG :
           SAFETY_LIMIT_SWING_MIN_DEG;
       break;
+  }
+}
+
+static void set_manual_endpoint(unsigned axis, unsigned upper)
+{
+  set_endpoint(axis, upper);
+  if (axis == 1 && !upper)
+  {
+    encoder_data.length_hundredths_mm[1] = MANUAL_LIMIT_STICK_MIN_HUNDREDTHS_MM;
+  }
+  if (axis == 2)
+  {
+    encoder_data.length_hundredths_mm[2] = upper ?
+        MANUAL_LIMIT_BUCKET_MAX_HUNDREDTHS_MM : MANUAL_LIMIT_BUCKET_MIN_HUNDREDTHS_MM;
   }
 }
 
@@ -388,8 +403,160 @@ static void test_feedback_reversal_still_respects_output_limits(void)
   }
 }
 
+/* Freeze the deployed RL envelope while manual gets historical bounds. */
+_Static_assert(SAFETY_LIMIT_BOOM_MIN_HUNDREDTHS_MM == 8000, "RL boom min changed");
+_Static_assert(SAFETY_LIMIT_BOOM_MAX_HUNDREDTHS_MM == 19000, "RL boom max changed");
+_Static_assert(SAFETY_LIMIT_STICK_MIN_HUNDREDTHS_MM == 6000, "RL stick min changed");
+_Static_assert(SAFETY_LIMIT_STICK_MAX_HUNDREDTHS_MM == 22000, "RL stick max changed");
+_Static_assert(SAFETY_LIMIT_BUCKET_MIN_HUNDREDTHS_MM == 6000, "RL bucket min changed");
+_Static_assert(SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM == 16000, "RL bucket max changed");
+_Static_assert(MANUAL_LIMIT_STICK_MIN_HUNDREDTHS_MM == 4700, "manual stick min changed");
+_Static_assert(MANUAL_LIMIT_BUCKET_MIN_HUNDREDTHS_MM == 4800, "manual bucket min changed");
+_Static_assert(MANUAL_LIMIT_BUCKET_MAX_HUNDREDTHS_MM == 18000, "manual bucket max changed");
+
+_Static_assert(SAFETY_LIMIT_MASK_BOOM == VELOCITY_LIMIT_BOOM, "boom mask mismatch");
+_Static_assert(SAFETY_LIMIT_MASK_STICK == VELOCITY_LIMIT_STICK, "stick mask mismatch");
+_Static_assert(SAFETY_LIMIT_MASK_BUCKET == VELOCITY_LIMIT_BUCKET, "bucket mask mismatch");
+_Static_assert(SAFETY_LIMIT_MASK_SWING == VELOCITY_LIMIT_SWING, "swing mask mismatch");
+
+static void test_manual_limit_telemetry(void)
+{
+  MotionTelemetry telemetry;
+  start_manual();
+  /* At the historical manual bucket upper bound, block only extension. */
+  encoder_data.length_hundredths_mm[2] = 18000;
+  latest_control_command.axis = (ControlAxisCommand){0.218f, 0.0f, -0.162f, 0.0f};
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.control_mode == MOTION_CONTROL_MODE_MANUAL);
+  assert(telemetry.control_enabled == 1U);
+  assert(telemetry.command_action_bucket < 0.0f); /* Before position clipping. */
+  assert(telemetry.valve_bucket_deg == JOYSTICK_VALVE_NEUTRAL_DEG);
+  assert(telemetry.valve_boom_deg > JOYSTICK_VALVE_NEUTRAL_DEG);
+  assert(telemetry.limit_mask == VELOCITY_LIMIT_BUCKET);
+
+  /* A command toward the allowed range clears the bit and still moves. */
+  latest_control_command.axis = (ControlAxisCommand){0.0f, 0.0f, 0.2f, 0.0f};
+  tick += COLLECTION_CONTROL_PERIOD_MS;
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.limit_mask == 0U);
+  assert(telemetry.valve_bucket_deg != JOYSTICK_VALVE_NEUTRAL_DEG);
+
+  latest_control_command.axis.bucket = -0.2f;
+  tick += COLLECTION_CONTROL_PERIOD_MS;
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.limit_mask == VELOCITY_LIMIT_BUCKET);
+  /* Explicit neutral and a lost sensor must not leak the previous mask. */
+  latest_control_command.axis.bucket = 0.0f;
+  tick += COLLECTION_CONTROL_PERIOD_MS;
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.limit_mask == 0U);
+  assert_neutral();
+  latest_control_command.axis.bucket = -0.2f;
+  tick += COLLECTION_CONTROL_PERIOD_MS;
+  ServiceControl20Hz();
+  encoder_status = FTEPC485_ERROR_UART;
+  tick += COLLECTION_CONTROL_PERIOD_MS;
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.limit_mask == 0U);
+  assert_neutral();
+
+  /* All clipped axes can be reported together, with the existing wire bits. */
+  start_manual();
+  for (unsigned axis = 0; axis < 4; ++axis)
+  {
+    set_manual_endpoint(axis, 1U);
+    set_axis(axis, axis == 2 ? -0.6f : 0.6f);
+  }
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.limit_mask == 15U);
+  assert_neutral();
+  /* Zero handovers clear an old manual mask before the next control tick. */
+  receive_velocity(0.0f, 2U);
+  receive_manual(0.0f, 3U);
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.control_mode == MOTION_CONTROL_MODE_MANUAL);
+  assert(telemetry.limit_mask == 0U);
+  for (unsigned axis = 0; axis < 4; ++axis)
+  {
+    set_axis(axis, axis == 2 ? -0.6f : 0.6f);
+  }
+  tick += COLLECTION_CONTROL_PERIOD_MS;
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.limit_mask == 15U);
+  tick = last_valid_control_tick + JOYSTICK_CONTROL_TIMEOUT_MS + 1U;
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.control_mode == MOTION_CONTROL_MODE_SAFE_ZERO);
+  assert(telemetry.limit_mask == 0U);
+}
+
+static void test_manual_act_within_historical_range(void)
+{
+  MotionTelemetry telemetry;
+  start_manual();
+  /* Actual ACT input is inside the user-selected historical manual range. */
+  encoder_data.length_hundredths_mm[2] = 16255;
+  latest_control_command.axis = (ControlAxisCommand){0.218f, 0.0f, -0.162f, 0.0f};
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.control_mode == MOTION_CONTROL_MODE_MANUAL);
+  assert(telemetry.control_enabled == 1U);
+  assert(telemetry.limit_mask == 0U);
+  assert(telemetry.valve_bucket_deg < JOYSTICK_VALVE_NEUTRAL_DEG);
+  assert_original_mapping();
+
+  /* Velocity mode keeps its existing 160 mm bucket bound at the same state. */
+  start_manual();
+  encoder_data.length_hundredths_mm[2] = 16255;
+  control_mode_supervisor.active_mode = CONTROL_MODE_VELOCITY_REFERENCE;
+  latest_control_command.mode = CONTROL_MODE_VELOCITY_REFERENCE;
+  latest_control_command.axis.bucket = 0.001f;
+  ServiceControl20Hz();
+  FillMotionTelemetry(&telemetry, tick);
+  assert(telemetry.limit_mask == VELOCITY_LIMIT_BUCKET);
+  assert(telemetry.bucket_v_ref_mmps == 0.0f);
+  assert_neutral();
+}
+
+static void test_manual_lower_extension_does_not_change_rl(void)
+{
+  for (unsigned axis = 1; axis <= 2; ++axis)
+  {
+    MotionTelemetry telemetry;
+    start_manual();
+    encoder_data.length_hundredths_mm[axis] = 5000;
+    /* 50 mm is inside manual's 47/48 mm range, outside RL's 60 mm range. */
+    set_axis(axis, axis == 1 ? -0.2f : 0.2f);
+    ServiceControl20Hz();
+    FillMotionTelemetry(&telemetry, tick);
+    assert(telemetry.limit_mask == 0U);
+    assert(applied_targets.pump_percent != 0.0f);
+    assert_original_mapping();
+
+    start_manual();
+    encoder_data.length_hundredths_mm[axis] = 5000;
+    control_mode_supervisor.active_mode = CONTROL_MODE_VELOCITY_REFERENCE;
+    latest_control_command.mode = CONTROL_MODE_VELOCITY_REFERENCE;
+    set_axis(axis, -0.001f);
+    ServiceControl20Hz();
+    FillMotionTelemetry(&telemetry, tick);
+    assert(telemetry.limit_mask == (1UL << axis));
+    assert_neutral();
+  }
+}
+
 int main(void)
 {
+  test_manual_lower_extension_does_not_change_rl();
+  test_manual_act_within_historical_range();
+  test_manual_limit_telemetry();
   test_small_velocity_reaches_pwm_and_keeps_limits();
   test_feedback_reversal_still_respects_output_limits();
   test_failed_neutral_is_retried();
@@ -402,14 +569,19 @@ int main(void)
     {
       float outward = (axis == 2 ? -0.6f : 0.6f) * (upper ? 1.0f : -1.0f);
       start_manual();
-      set_endpoint(axis, upper);
+      set_manual_endpoint(axis, upper);
       set_axis(axis, outward);
       ServiceControl20Hz();
       assert_neutral();
+      MotionTelemetry telemetry;
+      FillMotionTelemetry(&telemetry, tick);
+      assert(telemetry.limit_mask == (1UL << axis));
       set_axis(axis, -outward);
       tick += COLLECTION_CONTROL_PERIOD_MS;
       ServiceControl20Hz();
       assert_original_mapping();
+      FillMotionTelemetry(&telemetry, tick);
+      assert(telemetry.limit_mask == 0U);
     }
   }
 

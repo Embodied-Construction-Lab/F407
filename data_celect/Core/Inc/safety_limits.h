@@ -16,6 +16,18 @@ extern "C" {
 #define SAFETY_LIMIT_SWING_MIN_DEG (-100.0f)
 #define SAFETY_LIMIT_SWING_MAX_DEG 100.0f
 
+/* User-selected working bounds from ICRA manual demonstrations, not physical
+   hard stops. Other manual bounds retain the existing values above. */
+#define MANUAL_LIMIT_STICK_MIN_HUNDREDTHS_MM 4700
+#define MANUAL_LIMIT_BUCKET_MIN_HUNDREDTHS_MM 4800
+#define MANUAL_LIMIT_BUCKET_MAX_HUNDREDTHS_MM 18000
+
+/* Telemetry bit order is [boom, stick, bucket, swing] in both modes. */
+#define SAFETY_LIMIT_MASK_BOOM (1UL << 0)
+#define SAFETY_LIMIT_MASK_STICK (1UL << 1)
+#define SAFETY_LIMIT_MASK_BUCKET (1UL << 2)
+#define SAFETY_LIMIT_MASK_SWING (1UL << 3)
+
 #define SAFETY_LIMIT_SWING_POSITIVE_INCREASES_YAW 1U
 #define SAFETY_LIMIT_BUCKET_POSITIVE_INCREASES_LENGTH 0U
 #define SAFETY_LIMIT_STICK_POSITIVE_INCREASES_LENGTH 1U
@@ -38,8 +50,12 @@ typedef struct
 } SafetyLimitsFeedback;
 
 float SafetyLimits_NormalizeYawDeg(float yaw_deg);
-void SafetyLimits_Apply(AxisControlSample *sample,
-                        const SafetyLimitsFeedback *feedback);
+/* Velocity mode keeps the existing directional limits and clipped-axis mask. */
+uint32_t SafetyLimits_Apply(AxisControlSample *sample,
+                            const SafetyLimitsFeedback *feedback);
+/* Manual/ACT mode has a separate historical working envelope. */
+uint32_t SafetyLimits_ApplyManual(AxisControlSample *sample,
+                                  const SafetyLimitsFeedback *feedback);
 
 #ifdef __cplusplus
 }

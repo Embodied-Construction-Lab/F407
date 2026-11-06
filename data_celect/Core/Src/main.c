@@ -113,6 +113,7 @@ static ControlCommand latest_control_command;
 static ControlModeSupervisor control_mode_supervisor;
 static VelocityControl velocity_controller;
 static VelocityControlOutput velocity_output;
+static uint32_t manual_limit_mask;
 static uint8_t velocity_feedback_ready;
 static uint8_t control_command_active;
 static volatile uint8_t usart2_restart_requested;
@@ -255,6 +256,7 @@ static void EnterSafeZero(void)
   VelocityControl_Reset(&velocity_controller);
   memset(&velocity_output, 0, sizeof(velocity_output));
   velocity_feedback_ready = 0U;
+  manual_limit_mask = 0U;
   control_command_active = 0U;
   control_failsafe_active = 0U;
 }
@@ -301,6 +303,7 @@ static void ProcessReceivedFrames(void)
       {
         VelocityControl_Reset(&velocity_controller);
         memset(&velocity_output, 0, sizeof(velocity_output));
+        manual_limit_mask = 0U;
       }
       latest_control_command = parsed_command;
       command_rx_seq = parsed_command.command_seq;
@@ -335,6 +338,7 @@ static void ServiceControl20Hz(void)
   control_seq++;
   command_valid = ControlCommandIsValid(now_ms);
   velocity_feedback_ready = 0U;
+  manual_limit_mask = 0U;
 
   if ((command_valid != 0U) &&
       (control_mode_supervisor.active_mode == CONTROL_MODE_MANUAL_ACTION) &&
@@ -358,7 +362,7 @@ static void ServiceControl20Hz(void)
       limits_feedback.bucket_length_hundredths_mm =
           encoder_data.length_hundredths_mm[2];
       limits_feedback.yaw_deg = imu_yaw_deg;
-      SafetyLimits_Apply(&manual_action, &limits_feedback);
+      manual_limit_mask = SafetyLimits_ApplyManual(&manual_action, &limits_feedback);
     }
     JoystickServoMap_Compute(manual_action.x1, manual_action.x2,
                              manual_action.y1, manual_action.y2,
@@ -1059,7 +1063,8 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
       (control_mode_supervisor.active_mode ==
        CONTROL_MODE_VELOCITY_REFERENCE)
           ? velocity_output.limit_mask
-          : 0U;
+          : ((control_mode_supervisor.active_mode == CONTROL_MODE_MANUAL_ACTION)
+                 ? manual_limit_mask : 0U);
   telemetry->rs485_ok = (encoder_status == FTEPC485_OK) ? 1U : 0U;
   telemetry->dwj_ok = (dwj_status == HAL_OK) ? 1U : 0U;
   telemetry->imu_ok = (imu_sample_valid != 0U) ? 1U : 0U;

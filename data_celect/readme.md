@@ -12,6 +12,21 @@ The STM32 does not run RL or ACT. It owns command interpretation, the calibrated
 velocity PID, valve mapping, command timeout, actuator limits and the final PWM
 write boundary.
 
+## 2026-11-06：ACT／手动经验工作范围与限位反馈
+
+ACT 和遥操作共用 manual 分支，原始拉线工作范围调整为：动臂 **80～190 mm**、
+斗杆 **47～220 mm**、铲斗 **48～180 mm**；回转仍为 **−100～100°**。
+这是用户选择沿用的旧 ICRA **人工示教经验工作范围**，不是机械硬极限认证；
+依据为 83 段已完成示教的 10,436 帧，详见
+[历史范围与验证记录](../../EvaluationReport/2026-11-06_act_repair/manual_range.md)。
+仅 manual 分支改用 `SafetyLimits_ApplyManual`，范围外继续向外的动作归零、向内退回放行。
+**RL 速度模式保持原动臂 80～190、斗杆 60～220、铲斗 60～160 mm 的范围与执行行为。**
+轴向、手动 0.15 死区、阀映射、PID 和协议不变。
+
+`limit_mask` 同时补报 manual／ACT 的位置截断：bit 0/1/2/3 对应动臂／斗杆／铲斗／回转，
+例如 `4` 表示铲斗方向被位置限制。`command_action_*` 仍是死区后、位置限位前的杆量；
+实际输出看 `valve_*` 与 `pwm_*`。本修改需重新编译烧录才生效，尚未现场验收。
+
 ## 2026-11-05：自动速度独立阀控映射
 
 **本次交付：与 RealExecutionV1 的 `CandidateAutomatic` 执行映射匹配，待烧录及现场短测。**
@@ -116,7 +131,7 @@ CubeIDE 的 Debug／Release 构建路径及项目元数据已从历史 `receive_
 传感缺失下的零动作（包括四轴和两个履带输入的死区边界）。完整 host 测试通过；
 本轮未完成 ARM 全工程构建、烧录或真机运动。
 
-`homing_complete` 占位值及手动 `limit_mask` 的现状仍未改，不能将其当作已完成标定的证据。
+`homing_complete` 仍是占位值，不能当作已完成标定的证据。手动 `limit_mask` 的后续修复见本文 2026-11-06 更新。
 
 ## 2026-09-09 更新：角度 ADC 转换就绪检查
 
