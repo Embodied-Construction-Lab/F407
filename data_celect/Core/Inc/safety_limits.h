@@ -12,7 +12,8 @@ extern "C" {
 #define SAFETY_LIMIT_STICK_MIN_HUNDREDTHS_MM 6000
 #define SAFETY_LIMIT_STICK_MAX_HUNDREDTHS_MM 22000
 #define SAFETY_LIMIT_BUCKET_MIN_HUNDREDTHS_MM 6000
-#define SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM 16000
+/* Shared automatic/manual/ACT upper working bound for mode handoff. */
+#define SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM 18000
 #define SAFETY_LIMIT_SWING_MIN_DEG (-140.0f)
 #define SAFETY_LIMIT_SWING_MAX_DEG 140.0f
 
@@ -20,7 +21,7 @@ extern "C" {
    hard stops. Other manual bounds retain the existing values above. */
 #define MANUAL_LIMIT_STICK_MIN_HUNDREDTHS_MM 4700
 #define MANUAL_LIMIT_BUCKET_MIN_HUNDREDTHS_MM 4800
-#define MANUAL_LIMIT_BUCKET_MAX_HUNDREDTHS_MM 18000
+#define MANUAL_LIMIT_BUCKET_MAX_HUNDREDTHS_MM SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM
 
 /* Telemetry bit order is [boom, stick, bucket, swing] in both modes. */
 #define SAFETY_LIMIT_MASK_BOOM (1UL << 0)

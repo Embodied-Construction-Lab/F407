@@ -215,18 +215,67 @@ static void test_velocity_telemetry(void)
   }
 }
 
-static void receive_velocity(float boom, uint32_t seq)
+static void receive_velocity_reference(float boom, float bucket, uint32_t seq)
 {
   char frame[STICK_FRAME_MAX_LEN];
   int length = snprintf(frame, sizeof(frame),
       "{\"schema_version\":\"stm32_velocity_command.v2\","
-      "\"boom_mps\":%.3f,\"stick_mps\":0,\"bucket_mps\":0,\"swing_radps\":0,"
+      "\"boom_mps\":%.3f,\"stick_mps\":0,\"bucket_mps\":%.6f,\"swing_radps\":0,"
       "\"command_seq\":%u,\"command_source_stamp_ms\":%u}\n",
-      (double)boom, (unsigned)seq, (unsigned)tick);
+      (double)boom, (double)bucket, (unsigned)seq, (unsigned)tick);
   assert(length > 0 && length < (int)sizeof(frame));
   StickReceiver_FeedFromIsr(&stick_receiver, (const uint8_t *)frame,
                            (uint16_t)length);
   ProcessReceivedFrames();
+}
+
+static void receive_velocity(float boom, uint32_t seq)
+{
+  receive_velocity_reference(boom, 0.0f, seq);
+}
+
+static void test_act_to_rl_bucket_handoff(void)
+{
+  /* Raw positions and commands from the two 2026-11-07 CarryMaterial runs. */
+  const int32_t positions[] = {17985, 17493, 17078, 16580};
+  for (unsigned index = 0; index < sizeof(positions) / sizeof(positions[0]); ++index)
+  {
+    MotionTelemetry telemetry;
+    start_manual();
+    encoder_data.length_hundredths_mm[2] = positions[index];
+    latest_control_command.axis.bucket = -0.162f;
+    ServiceControl20Hz();
+    assert_original_mapping();
+    assert(manual_limit_mask == 0U);
+    assert(applied_targets.bucket_deg < JOYSTICK_VALVE_NEUTRAL_DEG);
+
+    receive_velocity(0.0f, 2U);
+    tick += COLLECTION_CONTROL_PERIOD_MS;
+    ServiceControl20Hz();
+    assert_neutral();
+    for (unsigned braking = 0; braking < 2; ++braking)
+    {
+      /* A slow retract target with faster measured retraction requests an
+         extension-direction braking output; both limit layers must permit it. */
+      const float demand = braking ? -0.002442f : 0.0342f;
+      encoder_data.speed_hundredths_mm_s[2] = braking ? -2225 : 0;
+      receive_velocity_reference(0.0f, demand, 3U + braking);
+      tick += COLLECTION_CONTROL_PERIOD_MS;
+      ServiceControl20Hz();
+      FillMotionTelemetry(&telemetry, tick);
+      assert(telemetry.control_mode == MOTION_CONTROL_MODE_VELOCITY);
+      assert(telemetry.control_enabled == 1U);
+      assert(fabsf(telemetry.bucket_v_ref_mmps - demand * 1000.0f) < 0.001f);
+      assert(telemetry.limit_mask == 0U);
+      assert(velocity_output.valve_action.bucket < 0.0f);
+      assert(applied_targets.bucket_deg < JOYSTICK_VALVE_NEUTRAL_DEG);
+      assert(applied_targets.pump_percent == JOYSTICK_FIXED_PUMP_PERCENT);
+    }
+    receive_velocity(0.0f, 5U);
+    tick += COLLECTION_CONTROL_PERIOD_MS;
+    ServiceControl20Hz();
+    assert_neutral();
+  }
 }
 
 static void test_command_lifecycle(void)
@@ -403,13 +452,13 @@ static void test_feedback_reversal_still_respects_output_limits(void)
   }
 }
 
-/* Freeze the deployed RL envelope while manual gets historical bounds. */
+/* Only the RL bucket upper bound is aligned with the manual/ACT envelope. */
 _Static_assert(SAFETY_LIMIT_BOOM_MIN_HUNDREDTHS_MM == 8000, "RL boom min changed");
 _Static_assert(SAFETY_LIMIT_BOOM_MAX_HUNDREDTHS_MM == 19000, "RL boom max changed");
 _Static_assert(SAFETY_LIMIT_STICK_MIN_HUNDREDTHS_MM == 6000, "RL stick min changed");
 _Static_assert(SAFETY_LIMIT_STICK_MAX_HUNDREDTHS_MM == 22000, "RL stick max changed");
 _Static_assert(SAFETY_LIMIT_BUCKET_MIN_HUNDREDTHS_MM == 6000, "RL bucket min changed");
-_Static_assert(SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM == 16000, "RL bucket max changed");
+_Static_assert(SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM == 18000, "RL bucket max changed");
 _Static_assert(MANUAL_LIMIT_STICK_MIN_HUNDREDTHS_MM == 4700, "manual stick min changed");
 _Static_assert(MANUAL_LIMIT_BUCKET_MIN_HUNDREDTHS_MM == 4800, "manual bucket min changed");
 _Static_assert(MANUAL_LIMIT_BUCKET_MAX_HUNDREDTHS_MM == 18000, "manual bucket max changed");
@@ -512,7 +561,7 @@ static void test_manual_act_within_historical_range(void)
   assert(telemetry.valve_bucket_deg < JOYSTICK_VALVE_NEUTRAL_DEG);
   assert_original_mapping();
 
-  /* Velocity mode keeps its existing 160 mm bucket bound at the same state. */
+  /* Velocity mode also permits extension below the shared 180 mm upper bound. */
   start_manual();
   encoder_data.length_hundredths_mm[2] = 16255;
   control_mode_supervisor.active_mode = CONTROL_MODE_VELOCITY_REFERENCE;
@@ -520,9 +569,9 @@ static void test_manual_act_within_historical_range(void)
   latest_control_command.axis.bucket = 0.001f;
   ServiceControl20Hz();
   FillMotionTelemetry(&telemetry, tick);
-  assert(telemetry.limit_mask == VELOCITY_LIMIT_BUCKET);
-  assert(telemetry.bucket_v_ref_mmps == 0.0f);
-  assert_neutral();
+  assert(telemetry.limit_mask == 0U);
+  assert(fabsf(telemetry.bucket_v_ref_mmps - 1.0f) < 0.001f);
+  assert(applied_targets.bucket_deg < JOYSTICK_VALVE_NEUTRAL_DEG);
 }
 
 static void test_manual_lower_extension_does_not_change_rl(void)
@@ -549,6 +598,51 @@ static void test_manual_lower_extension_does_not_change_rl(void)
     FillMotionTelemetry(&telemetry, tick);
     assert(telemetry.limit_mask == (1UL << axis));
     assert_neutral();
+  }
+}
+
+static void test_bucket_upper_bound_in_both_modes(void)
+{
+  const int32_t positions[] = {17999, 18000, 18001};
+  for (unsigned velocity = 0; velocity < 2; ++velocity)
+  {
+    for (unsigned index = 0; index < sizeof(positions) / sizeof(positions[0]); ++index)
+    {
+      /* Extend, return, and (velocity only) brake fast retraction. */
+      for (unsigned scenario = 0; scenario < (velocity ? 3U : 2U); ++scenario)
+      {
+        MotionTelemetry telemetry;
+        const unsigned blocked = positions[index] >= 18000 && scenario != 1;
+        const float speed = scenario == 0 ? 0.0342f : -0.002442f;
+        start_manual();
+        encoder_data.length_hundredths_mm[2] = positions[index];
+        if (velocity)
+        {
+          control_mode_supervisor.active_mode = CONTROL_MODE_VELOCITY_REFERENCE;
+          latest_control_command.mode = CONTROL_MODE_VELOCITY_REFERENCE;
+          encoder_data.speed_hundredths_mm_s[2] = scenario == 2 ? -2225 : 0;
+        }
+        latest_control_command.axis.bucket = velocity ? speed :
+            (scenario == 0 ? -0.6f : 0.6f);
+        ServiceControl20Hz();
+        FillMotionTelemetry(&telemetry, tick);
+        assert(telemetry.limit_mask == (blocked ? SAFETY_LIMIT_MASK_BUCKET : 0U));
+        if (velocity)
+        {
+          const float reference = blocked && scenario == 0 ? 0.0f : speed * 1000.0f;
+          assert(fabsf(telemetry.bucket_v_ref_mmps - reference) < 0.001f);
+        }
+        if (blocked)
+        {
+          assert_neutral();
+        }
+        else
+        {
+          const int direction = scenario == 1 ? 1 : -1;
+          assert((applied_targets.bucket_deg - JOYSTICK_VALVE_NEUTRAL_DEG) * direction > 0.0f);
+        }
+      }
+    }
   }
 }
 
@@ -600,6 +694,8 @@ static void test_swing_140_degree_envelope_in_both_modes(void)
 
 int main(void)
 {
+  test_act_to_rl_bucket_handoff();
+  test_bucket_upper_bound_in_both_modes();
   test_swing_140_degree_envelope_in_both_modes();
   test_manual_lower_extension_does_not_change_rl();
   test_manual_act_within_historical_range();

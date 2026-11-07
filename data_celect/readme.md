@@ -12,6 +12,23 @@ The STM32 does not run RL or ACT. It owns command interpretation, the calibrated
 velocity PID, valve mapping, command timeout, actuator limits and the final PWM
 write boundary.
 
+## 2026-11-07：ACT→RL 铲斗上界对齐
+
+RL 速度模式的原始铲斗拉线范围调整为 **60～180 mm**，上界对齐现有
+manual／ACT 的 **48～180 mm** 经验工作范围，避免 ACT 在 160～180 mm
+交接后，RL 的正向伸缸目标或回缩过程中的反向制动输出被旧自动上界截零。
+180 mm 仍是用户选择的工作上界，不是机械硬极限认证；达到或超过该上界时
+继续伸长仍归零，向内退回仍放行。其他轴范围、两种模式的下界、动作方向、
+手动死区、PID、阀映射、命令超时和零命令交接均保持原值。
+
+Host 回归通过实际 `main.c` 控制服务、速度 PID、限位、阀映射和遥测链路，
+覆盖日志中的 179.85／174.93／170.78／165.80 mm 交接位置、正速度请求与
+回缩制动，以及 179.99／180.00／180.01 mm 的两模式边界行为。
+Host 回归与 ARM GCC Debug／Release 构建均通过；尚未烧录或现场验收。
+旧构建不包含本次上界修正，须使用本次重新编译的固件。
+验证与离线回放见 [交接修正记录](../../EvaluationReport/2026-11-07_carry_bucket_handoff_fix/README.md)。
+诊断依据见 [铲斗限位审查](../../EvaluationReport/2026-11-07_single_scoop_transport_review/firmware_bucket_review.md)。
+
 ## 2026-11-07：回转工作范围 ±140°
 
 手动／ACT 与 RL 速度模式共用 **−140～140°** 回转范围。限位使用 STM32
@@ -31,7 +48,8 @@ ACT 和遥操作共用 manual 分支，原始拉线工作范围调整为：动�
 依据为 83 段已完成示教的 10,436 帧，详见
 [历史范围与验证记录](../../EvaluationReport/2026-11-06_act_repair/manual_range.md)。
 仅 manual 分支改用 `SafetyLimits_ApplyManual`，范围外继续向外的动作归零、向内退回放行。
-**RL 速度模式保持原动臂 80～190、斗杆 60～220、铲斗 60～160 mm 的范围与执行行为。**
+RL 速度模式当日保留原范围；当前为动臂 **80～190 mm**、斗杆 **60～220 mm**、
+铲斗 **60～180 mm**（铲斗上界修正见上方 2026-11-07 更新）。
 轴向、手动 0.15 死区、阀映射、PID 和协议不变。
 
 `limit_mask` 同时补报 manual／ACT 的位置截断：bit 0/1/2/3 对应动臂／斗杆／铲斗／回转，
