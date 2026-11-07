@@ -552,8 +552,55 @@ static void test_manual_lower_extension_does_not_change_rl(void)
   }
 }
 
+static void test_swing_140_degree_envelope_in_both_modes(void)
+{
+  /* Test deployed yaw values, not macros: the enlarged working interval must
+     apply to ACT/manual and velocity commands through the production service. */
+  const struct { float yaw; unsigned block_positive; unsigned block_negative; } cases[] = {
+      {0.0f, 0, 0}, {100.0f, 0, 0}, {-100.0f, 0, 0},
+      {120.0f, 0, 0}, {-120.0f, 0, 0},
+      {139.9f, 0, 0}, {140.0f, 1, 0}, {140.1f, 1, 0},
+      {-139.9f, 0, 0}, {-140.0f, 0, 1}, {-140.1f, 0, 1},
+      {219.9f, 0, 1}, {220.0f, 0, 1}, {220.1f, 0, 0},
+      {179.9f, 1, 0}, {180.0f, 1, 0}, {180.1f, 0, 1},
+      {-179.9f, 0, 1}, {-180.0f, 0, 1}, {-180.1f, 1, 0},
+      {359.9f, 0, 0}, {360.0f, 0, 0}};
+  for (unsigned velocity = 0; velocity < 2; ++velocity)
+  {
+    for (unsigned index = 0; index < sizeof(cases) / sizeof(cases[0]); ++index)
+    {
+      for (int direction = -1; direction <= 1; direction += 2)
+      {
+        MotionTelemetry telemetry;
+        const unsigned blocked = direction > 0 ? cases[index].block_positive :
+                                                cases[index].block_negative;
+        start_manual();
+        if (velocity)
+        {
+          control_mode_supervisor.active_mode = CONTROL_MODE_VELOCITY_REFERENCE;
+          latest_control_command.mode = CONTROL_MODE_VELOCITY_REFERENCE;
+        }
+        imu_yaw_deg = cases[index].yaw;
+        latest_control_command.axis.swing = direction * (velocity ? 0.1f : 0.5f);
+        ServiceControl20Hz();
+        FillMotionTelemetry(&telemetry, tick);
+        assert(telemetry.limit_mask == (blocked ? SAFETY_LIMIT_MASK_SWING : 0U));
+        if (blocked)
+        {
+          assert_neutral();
+        }
+        else
+        {
+          assert(applied_targets.swing_percent * direction > 0.0f);
+        }
+      }
+    }
+  }
+}
+
 int main(void)
 {
+  test_swing_140_degree_envelope_in_both_modes();
   test_manual_lower_extension_does_not_change_rl();
   test_manual_act_within_historical_range();
   test_manual_limit_telemetry();

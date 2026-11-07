@@ -12,10 +12,21 @@ The STM32 does not run RL or ACT. It owns command interpretation, the calibrated
 velocity PID, valve mapping, command timeout, actuator limits and the final PWM
 write boundary.
 
+## 2026-11-07：回转工作范围 ±140°
+
+手动／ACT 与 RL 速度模式共用 **−140～140°** 回转范围。限位使用 STM32
+积分回转角的 `[-180°, 180°]` 表示（积分每帧先归一化到 `[0°,360°)`）；
+它不是 Python 会话参考零点。
+到达 ±140° 或超出范围时，只截断继续向外的命令，允许向内退回。
+三缸范围、速度尺度、PID、阀映射与 IMU 算法均保持不变。
+
+Host 回归覆盖两种控制模式的边界、超界退回和 ±180° wrap；须重新编译并烧录才生效。
+构建与测试记录见 [回转范围验证](../../EvaluationReport/2026-11-07_act_rl_speed_dump/firmware_swing_140/README.md)。
+
 ## 2026-11-06：ACT／手动经验工作范围与限位反馈
 
 ACT 和遥操作共用 manual 分支，原始拉线工作范围调整为：动臂 **80～190 mm**、
-斗杆 **47～220 mm**、铲斗 **48～180 mm**；回转仍为 **−100～100°**。
+斗杆 **47～220 mm**、铲斗 **48～180 mm**；当日回转为 **−100～100°**，现值见上节。
 这是用户选择沿用的旧 ICRA **人工示教经验工作范围**，不是机械硬极限认证；
 依据为 83 段已完成示教的 10,436 帧，详见
 [历史范围与验证记录](../../EvaluationReport/2026-11-06_act_repair/manual_range.md)。

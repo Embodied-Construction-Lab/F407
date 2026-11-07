@@ -13,8 +13,8 @@ extern "C" {
 #define SAFETY_LIMIT_STICK_MAX_HUNDREDTHS_MM 22000
 #define SAFETY_LIMIT_BUCKET_MIN_HUNDREDTHS_MM 6000
 #define SAFETY_LIMIT_BUCKET_MAX_HUNDREDTHS_MM 16000
-#define SAFETY_LIMIT_SWING_MIN_DEG (-100.0f)
-#define SAFETY_LIMIT_SWING_MAX_DEG 100.0f
+#define SAFETY_LIMIT_SWING_MIN_DEG (-140.0f)
+#define SAFETY_LIMIT_SWING_MAX_DEG 140.0f
 
 /* User-selected working bounds from ICRA manual demonstrations, not physical
    hard stops. Other manual bounds retain the existing values above. */
