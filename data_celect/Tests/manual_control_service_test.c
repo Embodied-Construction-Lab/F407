@@ -54,6 +54,8 @@ static HAL_StatusTypeDef ApplyServoTargets(const JoystickServoTargets *targets)
   return HAL_OK;
 }
 
+#include "telemetry_snapshot_test.inc"
+
 /* The test compiles the active main.c service, not a second manual controller. */
 #include "control_service_under_test.inc"
 
@@ -694,6 +696,7 @@ static void test_swing_140_degree_envelope_in_both_modes(void)
 
 int main(void)
 {
+  test_telemetry_encoder_snapshot();
   test_act_to_rl_bucket_handoff();
   test_bucket_upper_bound_in_both_modes();
   test_swing_140_degree_envelope_in_both_modes();

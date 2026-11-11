@@ -931,6 +931,12 @@ static void ServiceOled(void)
 static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
 {
   ManualAction action;
+  Ftepc485_Data encoder_snapshot;
+  Ftepc485_Status encoder_snapshot_status;
+  uint32_t sensor_sequence_snapshot;
+  uint32_t sensor_stamp_snapshot;
+  int32_t arm_angle_snapshot;
+  uint32_t saved_primask;
   uint8_t command_valid;
   uint8_t command_timed_out;
   uint32_t fault_flags = 0U;
@@ -939,6 +945,19 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   {
     return;
   }
+
+  /* USART3 completes the encoder sample in an ISR. Copy this group together;
+   * do not mix an old sequence with a new timestamp, position or velocity.
+   * Only raw copies run masked: conversions, formatting and UART stay outside.
+   * Restore the caller's interrupt state rather than unconditionally enabling. */
+  saved_primask = __get_PRIMASK();
+  __disable_irq();
+  sensor_sequence_snapshot = sensor_seq;
+  sensor_stamp_snapshot = sensor_stamp_ms;
+  encoder_snapshot = encoder_data;
+  arm_angle_snapshot = small_arm_angle_hundredths_deg;
+  encoder_snapshot_status = encoder_status;
+  __set_PRIMASK(saved_primask);
 
   command_valid = ControlCommandIsValid(now_ms);
   /* Also marks a fail-closed rejected command so a new serial owner can
@@ -949,9 +968,9 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
 
   telemetry->control_seq = control_seq;
   telemetry->control_stamp_ms = last_control_tick;
-  telemetry->sensor_seq = sensor_seq;
-  telemetry->sensor_stamp_ms = sensor_stamp_ms;
-  telemetry->sensor_is_new = (sensor_seq != last_sent_sensor_seq) ? 1U : 0U;
+  telemetry->sensor_seq = sensor_sequence_snapshot;
+  telemetry->sensor_stamp_ms = sensor_stamp_snapshot;
+  telemetry->sensor_is_new = (sensor_sequence_snapshot != last_sent_sensor_seq) ? 1U : 0U;
   telemetry->command_rx_seq = command_rx_seq;
   telemetry->command_source_stamp_ms = command_source_stamp_ms;
   telemetry->command_received_stamp_ms = command_received_stamp_ms;
@@ -976,21 +995,21 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
   telemetry->command_action_swing = action.swing;
 
   telemetry->boom_pos_mm =
-      (float)encoder_data.length_hundredths_mm[0] / 100.0f;
+      (float)encoder_snapshot.length_hundredths_mm[0] / 100.0f;
   telemetry->stick_pos_mm =
-      (float)encoder_data.length_hundredths_mm[1] / 100.0f;
+      (float)encoder_snapshot.length_hundredths_mm[1] / 100.0f;
   telemetry->bucket_pos_mm =
-      (float)encoder_data.length_hundredths_mm[2] / 100.0f;
+      (float)encoder_snapshot.length_hundredths_mm[2] / 100.0f;
   telemetry->boom_vel_mmps =
-      (float)encoder_data.speed_hundredths_mm_s[0] / 100.0f;
+      (float)encoder_snapshot.speed_hundredths_mm_s[0] / 100.0f;
   telemetry->stick_vel_mmps =
-      (float)encoder_data.speed_hundredths_mm_s[1] / 100.0f;
+      (float)encoder_snapshot.speed_hundredths_mm_s[1] / 100.0f;
   telemetry->bucket_vel_mmps =
-      (float)encoder_data.speed_hundredths_mm_s[2] / 100.0f;
+      (float)encoder_snapshot.speed_hundredths_mm_s[2] / 100.0f;
   telemetry->boom_angle_deg =
       (float)dwj_readings.big_arm.angle_tenths_deg / 10.0f;
   telemetry->arm_angle_deg =
-      (float)small_arm_angle_hundredths_deg / 100.0f;
+      (float)arm_angle_snapshot / 100.0f;
   telemetry->bucket_angle_deg =
       (float)dwj_readings.bucket.angle_tenths_deg / 10.0f;
   telemetry->swing_angle_deg = imu_yaw_deg;
@@ -1065,7 +1084,7 @@ static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)
           ? velocity_output.limit_mask
           : ((control_mode_supervisor.active_mode == CONTROL_MODE_MANUAL_ACTION)
                  ? manual_limit_mask : 0U);
-  telemetry->rs485_ok = (encoder_status == FTEPC485_OK) ? 1U : 0U;
+  telemetry->rs485_ok = (encoder_snapshot_status == FTEPC485_OK) ? 1U : 0U;
   telemetry->dwj_ok = (dwj_status == HAL_OK) ? 1U : 0U;
   telemetry->imu_ok = (imu_sample_valid != 0U) ? 1U : 0U;
 

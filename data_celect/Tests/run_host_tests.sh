@@ -96,11 +96,15 @@ valid_start = source.index("static uint8_t ControlCommandIsValid(uint32_t now_ms
 service_end = source.index("\nstatic void Imu_NormalizeYaw", valid_start)
 telemetry_start = source.index("static void FillMotionTelemetry(MotionTelemetry *telemetry, uint32_t now_ms)\n{")
 telemetry_end = source.index("\nstatic void ServiceTelemetry", telemetry_start)
+telemetry = source[telemetry_start:telemetry_end]
+# Host-only simulated IRQ opportunity after every production C statement.
+# The firmware body is unchanged; fake PRIMASK delays the ISR inside its copy.
+telemetry = telemetry.replace(";\n", ";\n  TelemetryInterruptPoint();\n")
 fault_defines = "\n".join(line for line in source.splitlines()
                           if line.startswith("#define TELEMETRY_FAULT_")) + "\n"
 pathlib.Path(sys.argv[2]).write_text(
     fault_defines + source[input_start:input_end] + source[valid_start:service_end] +
-    source[telemetry_start:telemetry_end])
+    telemetry)
 PYCODE
 cc "${common[@]}" -I"${project_root}/Tests/fakes" -I"${build_dir}" \
   "${project_root}/Tests/manual_control_service_test.c" \
